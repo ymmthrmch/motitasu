@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block title %}ホーム - Motitasu{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-12">
+            <h1>Motitasuへようこそ</h1>
+            {% if user.is_authenticated %}
+                <p>こんにちは、{{ user.name }}さん！</p>
+            {% else %}
+                <p>サービスを利用するには、ログインまたは新規登録してください。</p>
+                <div class="mt-3">
+                    <a href="{% url 'accounts:login' %}" class="btn btn-primary">ログイン</a>
+                    <a href="{% url 'accounts:signup' %}" class="btn btn-secondary">新規登録</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
