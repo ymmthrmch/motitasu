@@ -4,97 +4,124 @@
 {% block title %}打刻管理{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'timeclock/css/timeclock.css' %}">
+<link rel="stylesheet" href="{% static 'timeclock/css/timeclock.css' %}?v={% now 'U' %}">
 {% endblock %}
 
 {% block content %}
 <div class="container my-4">
     <h1 class="text-center mb-4">打刻管理システム</h1>
-    
+
     <div class="clock-container">
         <div class="date-display" id="dateDisplay"></div>
         <div class="digital-clock" id="digitalClock">--:--:--</div>
-        
+
         {% if last_record %}
-            <div class="mt-3">
-                現在のステータス: 
-                {% if last_record.clock_type == 'clock_in' %}
-                    <span class="status-badge badge-working">勤務中</span>
-                {% elif last_record.clock_type == 'break_start' %}
-                    <span class="status-badge badge-break">休憩中</span>
-                {% elif last_record.clock_type == 'break_end' %}
-                    <span class="status-badge badge-working">勤務中</span>
-                {% elif last_record.clock_type == 'clock_out' %}
-                    <span class="status-badge badge-finished">退勤済み</span>
-                {% endif %}
-            </div>
+        <div class="mt-3">
+            現在のステータス:
+            {% if last_record.clock_type == 'clock_in' %}
+            <span class="status-badge badge-working">勤務中</span>
+            {% elif last_record.clock_type == 'break_start' %}
+            <span class="status-badge badge-break">休憩中</span>
+            {% elif last_record.clock_type == 'break_end' %}
+            <span class="status-badge badge-working">勤務中</span>
+            {% elif last_record.clock_type == 'clock_out' %}
+            <span class="status-badge badge-finished">退勤済み</span>
+            {% endif %}
+        </div>
         {% endif %}
     </div>
-    
+
     {% if messages %}
-        <div class="mb-3">
-            {% for message in messages %}
-                {% if 'work_summary' in message.tags %}
-                    <div class="alert alert-success alert-dismissible fade show work-summary-alert" role="alert">
-                        <h5 class="alert-heading">退勤完了</h5>
-                        <hr>
-                        {% for line in message.message.split %}
-                            <p class="mb-1">{{ line }}</p>
-                        {% endfor %}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <div class="mb-3">
+        {% for message in messages %}
+        {% if 'work_summary' in message.tags %}
+        <div class="alert alert-success fade show work-summary-alert" role="alert">
+            <div class="text-center mb-3">
+                <h3 class="congratulations-title">お疲れさまでした</h3>
+            </div>
+            <div class="work-summary-content">
+                {% for line in message.message.splitlines %}
+                {% if '労働時間' in line %}
+                <div class="summary-item work-time">
+                    <span class="summary-label">本日の労働時間</span>
+                    <span class="summary-value">{{ line|cut:"本日の労働時間: " }}</span>
+                </div>
+                {% elif '給与' in line and '月収' not in line %}
+                <div class="summary-item wage">
+                    <span class="summary-label">本日の給与</span>
+                    <span class="summary-value">{{ line|cut:"本日の給与: " }}</span>
+                </div>
+                {% elif '月収合計' in line %}
+                <div class="summary-item monthly-total">
+                    <span class="summary-label">今月の累計</span>
+                    <span class="summary-value">{{ line|cut:"月収合計: " }}</span>
+                </div>
+                {% elif '目標月収達成率' in line %}
+                <div class="summary-item achievement-rate">
+                    <span class="summary-label">目標月収達成率</span>
+                    <div class="achievement-container">
+                        <span class="summary-value">{{ line|cut:"目標月収達成率: " }}</span>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar" data-achievement="{{ line|cut:'目標月収達成率: '|cut:'%' }}"></div>
+                        </div>
                     </div>
-                {% else %}
-                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
+                </div>
                 {% endif %}
-            {% endfor %}
+                {% endfor %}
+            </div>
         </div>
+        {% else %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
     {% endif %}
-    
+
     <div class="clock-buttons">
         {% if 'clock_in' in available_actions %}
-            <form method="post" action="{% url 'clock_action' %}">
-                {% csrf_token %}
-                <input type="hidden" name="action_type" value="clock_in">
-                <button type="submit" class="clock-btn clock-in w-100">
-                    <i class="fas fa-sign-in-alt"></i> 出勤
-                </button>
-            </form>
+        <form method="post" action="{% url 'clock_action' %}">
+            {% csrf_token %}
+            <input type="hidden" name="action_type" value="clock_in">
+            <button type="submit" class="clock-btn clock-in w-100">
+                <i class="fas fa-sign-in-alt"></i> 出勤
+            </button>
+        </form>
         {% endif %}
-        
+
         {% if 'break_start' in available_actions %}
-            <form method="post" action="{% url 'clock_action' %}">
-                {% csrf_token %}
-                <input type="hidden" name="action_type" value="break_start">
-                <button type="submit" class="clock-btn break-start w-100">
-                    <i class="fas fa-coffee"></i> 休憩開始
-                </button>
-            </form>
+        <form method="post" action="{% url 'clock_action' %}">
+            {% csrf_token %}
+            <input type="hidden" name="action_type" value="break_start">
+            <button type="submit" class="clock-btn break-start w-100">
+                <i class="fas fa-coffee"></i> 休憩開始
+            </button>
+        </form>
         {% endif %}
-        
+
         {% if 'break_end' in available_actions %}
-            <form method="post" action="{% url 'clock_action' %}">
-                {% csrf_token %}
-                <input type="hidden" name="action_type" value="break_end">
-                <button type="submit" class="clock-btn break-end w-100">
-                    <i class="fas fa-play"></i> 休憩終了
-                </button>
-            </form>
+        <form method="post" action="{% url 'clock_action' %}">
+            {% csrf_token %}
+            <input type="hidden" name="action_type" value="break_end">
+            <button type="submit" class="clock-btn break-end w-100">
+                <i class="fas fa-play"></i> 休憩終了
+            </button>
+        </form>
         {% endif %}
-        
+
         {% if 'clock_out' in available_actions %}
-            <form method="post" action="{% url 'clock_action' %}">
-                {% csrf_token %}
-                <input type="hidden" name="action_type" value="clock_out">
-                <button type="submit" class="clock-btn clock-out w-100">
-                    <i class="fas fa-sign-out-alt"></i> 退勤
-                </button>
-            </form>
+        <form method="post" action="{% url 'clock_action' %}">
+            {% csrf_token %}
+            <input type="hidden" name="action_type" value="clock_out">
+            <button type="submit" class="clock-btn clock-out w-100">
+                <i class="fas fa-sign-out-alt"></i> 退勤
+            </button>
+        </form>
         {% endif %}
     </div>
-    
+
     {% if today_records %}
     <div class="records-container mt-4">
         <h3 class="mb-3">本日の打刻記録</h3>

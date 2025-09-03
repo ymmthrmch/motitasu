@@ -60,6 +60,12 @@ class User(AbstractBaseUser, PermissionsMixin):
         blank=True,
         help_text='ユーザーの時給を設定します（任意）。',
     )
+    target_monthly_income = models.PositiveIntegerField(
+        verbose_name='目標月収',
+        null=True,
+        blank=True,
+        help_text='ユーザーの目標月収を設定します（任意）。',
+    )
     
     objects = UserManager()
     

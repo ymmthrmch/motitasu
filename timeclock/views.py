@@ -69,20 +69,24 @@ def clock_action(request):
         # 退勤時に労働時間と給与を計算して表示
         if action_type == 'clock_out':
             service = WorkTimeService(request.user)
-            summary = service.get_daily_summary()
+            daily_summary = service.get_daily_summary()
+            monthly_summary = service.get_monthly_summary()
             
-            if summary['error']:
-                messages.warning(request, summary['error'])
+            if daily_summary['error']:
+                messages.warning(request, daily_summary['error'])
             else:
-                work_time_str = service.format_timedelta(summary['work_time'])
-                break_time_str = service.format_timedelta(summary['break_time'])
+                work_time_str = service.format_timedelta(daily_summary['work_time'])
                 
                 message = f"退勤を打刻しました。\n"
-                message += f"本日の労働時間: {work_time_str}\n"
-                message += f"本日の休憩時間: {break_time_str}"
+                message += f"本日の労働時間: {work_time_str}"
                 
-                if summary['wage'] > 0:
-                    message += f"\n本日の給与: {summary['wage']:,}円"
+                if daily_summary['wage'] > 0:
+                    message += f"\n本日の給与: {daily_summary['wage']:,}円"
+                
+                # 目標月収に対する達成率を追加
+                if monthly_summary['achievement_rate'] is not None:
+                    message += f"\n目標月収達成率: {monthly_summary['achievement_rate']}%"
+                    message += f"\n月収合計: {monthly_summary['total_wage']:,}円 / {monthly_summary['target_income']:,}円"
                 
                 messages.success(request, message, extra_tags='work_summary')
         else:

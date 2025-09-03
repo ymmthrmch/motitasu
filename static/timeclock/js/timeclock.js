@@ -63,6 +63,19 @@ function confirmClockAction(event, actionType, actionName) {
     }
 }
 
+function animateProgressBar() {
+    const progressBars = document.querySelectorAll('.progress-bar');
+    progressBars.forEach(bar => {
+        const achievement = parseFloat(bar.getAttribute('data-achievement'));
+        if (!isNaN(achievement)) {
+            setTimeout(() => {
+                const width = Math.min(achievement, 100);
+                bar.style.width = width + '%';
+            }, 500);
+        }
+    });
+}
+
 document.addEventListener('DOMContentLoaded', function () {
     syncWithServerTime();
     
@@ -70,6 +83,9 @@ document.addEventListener('DOMContentLoaded', function () {
     setInterval(updateClock, 1000);
     
     setInterval(syncWithServerTime, 5 * 60 * 1000);
+    
+    // 進捗バーのアニメーションを開始
+    animateProgressBar();
     
     const clockButtons = document.querySelectorAll('.clock-btn');
     clockButtons.forEach(button => {

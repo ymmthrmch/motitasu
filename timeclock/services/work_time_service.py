@@ -127,6 +127,12 @@ class WorkTimeService:
                 work_days += 1
             current_date += timedelta(days=1)
         
+        # 目標月収に対する達成率を計算
+        target_income = self.user.target_monthly_income if hasattr(self.user, 'target_monthly_income') and self.user.target_monthly_income else None
+        achievement_rate = None
+        if target_income and target_income > 0:
+            achievement_rate = round((total_wage / target_income) * 100, 1)
+        
         return {
             'year': year,
             'month': month,
@@ -136,6 +142,8 @@ class WorkTimeService:
             'total_work_hours': round(total_work_time.total_seconds() / 3600, 2),
             'total_break_hours': round(total_break_time.total_seconds() / 3600, 2),
             'total_wage': total_wage,
+            'target_income': target_income,
+            'achievement_rate': achievement_rate,
             'daily_summaries': daily_summaries
         }
     

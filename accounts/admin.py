@@ -13,7 +13,7 @@ class UserAdmin(BaseUserAdmin):
     
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
-        (_('個人情報'), {'fields': ('name','hourly_wage',)}),
+        (_('個人情報'), {'fields': ('name','hourly_wage','target_monthly_income',)}),
         (_('権限'), {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
         (_('重要な日付'), {'fields': ('last_login', 'created_at', 'updated_at')}),
     )
