@@ -23,6 +23,7 @@ staticfiles/
 .idea/
 *.swp
 *.swo
+.claude/
 
 # OS特有
 .DS_Store
