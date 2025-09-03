@@ -3,7 +3,7 @@
 {% block title %}新規登録{% endblock %}
 
 {% block content %}
-<div class="container mt-5">
+<div class="container my-5">
     <div class="row justify-content-center">
         <div class="col-md-6">
             <div class="card">
@@ -15,11 +15,13 @@
                         {% csrf_token %}
                         {% if form.errors %}
                             <div class="alert alert-danger">
+                                <ul>
                                 {% for field, errors in form.errors.items %}
                                     {% for error in errors %}
-                                        <p>{{ error }}</p>
+                                        <li>{{ error }}</li>
                                     {% endfor %}
                                 {% endfor %}
+                                </ul>
                             </div>
                         {% endif %}
                         <div class="mb-3">
