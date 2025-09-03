@@ -54,6 +54,12 @@ class User(AbstractBaseUser, PermissionsMixin):
         verbose_name='更新日',
         auto_now=True,
     )
+    hourly_wage = models.PositiveIntegerField(
+        verbose_name='時給',
+        null=True,
+        blank=True,
+        help_text='ユーザーの時給を設定します（任意）。',
+    )
     
     objects = UserManager()
     

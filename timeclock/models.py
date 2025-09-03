@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.utils import timezone
+from datetime import timedelta
 import pytz
 
 User = get_user_model()
@@ -20,6 +21,8 @@ class TimeRecord(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
+        verbose_name = '打刻記録'
+        verbose_name_plural = '打刻記録'
         ordering = ['-timestamp']
         indexes = [
             models.Index(fields=['user', 'timestamp']),

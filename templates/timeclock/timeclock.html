@@ -34,10 +34,21 @@
     {% if messages %}
         <div class="mb-3">
             {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
+                {% if 'work_summary' in message.tags %}
+                    <div class="alert alert-success alert-dismissible fade show work-summary-alert" role="alert">
+                        <h5 class="alert-heading">退勤完了</h5>
+                        <hr>
+                        {% for line in message.message.split %}
+                            <p class="mb-1">{{ line }}</p>
+                        {% endfor %}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% else %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endif %}
             {% endfor %}
         </div>
     {% endif %}
