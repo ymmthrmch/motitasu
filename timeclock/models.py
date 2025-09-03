@@ -79,4 +79,4 @@ class TimeRecord(models.Model):
     def __str__(self):
         jst = pytz.timezone('Asia/Tokyo')
         timestamp_jst = self.timestamp.astimezone(jst)
-        return f"{self.user.username} - {self.get_clock_type_display()} - {timestamp_jst.strftime('%Y-%m-%d %H:%M:%S')}"
+        return f"{self.user.name} - {self.get_clock_type_display()} - {timestamp_jst.strftime('%Y-%m-%d %H:%M:%S')}"
