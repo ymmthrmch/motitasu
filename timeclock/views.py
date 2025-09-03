@@ -7,6 +7,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 import pytz
 from .models import TimeRecord
+from .services import WorkTimeService
 
 @login_required
 def timeclock(request):
@@ -65,7 +66,31 @@ def clock_action(request):
         )
         record.save()
         
-        messages.success(request, f'{record.get_clock_type_display()}を打刻しました。')
+        # 退勤時に労働時間と給与を計算して表示
+        if action_type == 'clock_out':
+            service = WorkTimeService(request.user)
+            daily_summary = service.get_daily_summary()
+            monthly_summary = service.get_monthly_summary()
+            
+            if daily_summary['error']:
+                messages.warning(request, daily_summary['error'])
+            else:
+                work_time_str = service.format_timedelta(daily_summary['work_time'])
+                
+                message = f"退勤を打刻しました。\n"
+                message += f"本日の労働時間: {work_time_str}"
+                
+                if daily_summary['wage'] > 0:
+                    message += f"\n本日の給与: {daily_summary['wage']:,}円"
+                
+                # 目標月収に対する達成率を追加
+                if monthly_summary['achievement_rate'] is not None:
+                    message += f"\n目標月収達成率: {monthly_summary['achievement_rate']}%"
+                    message += f"\n月収合計: {monthly_summary['total_wage']:,}円 / {monthly_summary['target_income']:,}円"
+                
+                messages.success(request, message, extra_tags='work_summary')
+        else:
+            messages.success(request, f'{record.get_clock_type_display()}を打刻しました。')
     except ValidationError as e:
         messages.error(request, str(e.message if hasattr(e, 'message') else e.messages[0]))
     except Exception as e:
