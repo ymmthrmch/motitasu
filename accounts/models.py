@@ -60,11 +60,21 @@ class User(AbstractBaseUser, PermissionsMixin):
         blank=True,
         help_text='ユーザーの時給を設定します（任意）。',
     )
-    target_monthly_income = models.PositiveIntegerField(
-        verbose_name='目標月収',
+    hire_date = models.DateField(
+        verbose_name='雇用開始日',
         null=True,
         blank=True,
-        help_text='ユーザーの目標月収を設定します（任意）。',
+        help_text='有給休暇計算の基準日となります。',
+    )
+    weekly_work_days = models.PositiveIntegerField(
+        verbose_name='週の所定労働日数',
+        default=5,
+        help_text='週の所定労働日数（1-7日）。有給休暇の付与日数計算に使用します。',
+    )
+    current_paid_leave = models.PositiveIntegerField(
+        verbose_name='現在の有給休暇日数',
+        default=0,
+        help_text='現在付与されている有給休暇の残日数。',
     )
     
     objects = UserManager()

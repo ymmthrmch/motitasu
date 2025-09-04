@@ -1,0 +1,378 @@
+/* ダッシュボード全体のスタイル */
+.summary-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    height: 100%;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.summary-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.summary-card .card-header {
+    padding: 1rem 1.5rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.summary-card .card-header h5 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.summary-card .card-body {
+    padding: 1.5rem;
+}
+
+/* 月次給与カード */
+.monthly-wage .amount {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #2d3436;
+    margin-bottom: 0.5rem;
+}
+
+.monthly-wage .sub-info {
+    font-size: 0.9rem;
+    color: #636e72;
+}
+
+/* 達成率カード */
+.achievement .achievement-percentage {
+    font-size: 2.5rem;
+    font-weight: bold;
+    background: linear-gradient(45deg, #00b894, #00cec9);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 1rem;
+}
+
+.achievement .progress-container {
+    width: 100%;
+    height: 25px;
+    background: linear-gradient(90deg, #e0e0e0, #f5f5f5);
+    border-radius: 15px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1rem;
+}
+
+.achievement .progress-bar-dashboard {
+    height: 100%;
+    background: linear-gradient(90deg, #74b9ff, #0984e3, #00b894);
+    border-radius: 15px;
+    position: absolute;
+    right: 0;
+    transition: width 1.5s ease-out;
+    width: 0%;
+    box-shadow: 0 2px 4px rgba(116, 185, 255, 0.3);
+}
+
+.achievement .progress-bar-dashboard::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    animation: shine 2s ease-in-out infinite;
+}
+
+.achievement .no-target {
+    font-size: 1.2rem;
+    color: #636e72;
+    text-align: center;
+    padding: 2rem 0;
+}
+
+/* 累計統計カード */
+.all-time .stats-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.all-time .stats-row:last-child {
+    border-bottom: none;
+}
+
+.all-time .label {
+    color: #636e72;
+    font-size: 0.95rem;
+}
+
+.all-time .value {
+    font-weight: 600;
+    color: #2d3436;
+}
+
+/* カレンダー */
+.calendar-container {
+    background: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.calendar-nav {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.nav-arrow {
+    color: #667eea;
+    font-size: 2rem;
+    font-weight: 300;
+    cursor: pointer;
+    transition: color 0.3s ease;
+    text-decoration: none;
+    padding: 0 0.5rem;
+}
+
+.nav-arrow:hover {
+    color: #764ba2;
+}
+
+.nav-arrow.disabled {
+    color: #dfe6e9;
+    cursor: not-allowed;
+}
+
+.calendar-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #2d3436;
+    margin: 0;
+}
+
+.calendar-table {
+    width: 100%;
+    table-layout: fixed;
+}
+
+.calendar-table thead th {
+    text-align: center;
+    padding: 1rem 0.5rem;
+    font-weight: 600;
+    color: #636e72;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.calendar-table thead th.saturday {
+    color: #5561e1;
+}
+
+.calendar-table thead th.sunday {
+    color: #e17055;
+}
+
+.calendar-day {
+    position: relative;
+    height: 100px;
+    padding: 0.5rem;
+    border: 1px solid #f0f0f0;
+    vertical-align: top;
+    background: #fafafa;
+    transition: background 0.3s ease;
+}
+
+.calendar-day.has-data {
+    background: white;
+}
+
+.calendar-day.today {
+    background: #fff9e6;
+    border: 2px solid #fdcb6e;
+}
+
+.calendar-day.empty {
+    background: #f8f9fa;
+}
+
+.calendar-day:hover:not(.empty) {
+    background: #f0f3ff;
+    cursor: pointer;
+}
+
+.day-number {
+    font-weight: 600;
+    color: #2d3436;
+    margin-bottom: 0.25rem;
+}
+
+.calendar-day.today .day-number {
+    color: #e17055;
+}
+
+.day-info {
+    font-size: 0.85rem;
+}
+
+.work-hours {
+    color: #00b894;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.wage {
+    color: #636e72;
+    font-size: 0.8rem;
+}
+
+.working-badge {
+    display: inline-block;
+    background: #74b9ff;
+    color: white;
+    padding: 0.15rem 0.5rem;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    margin-top: 0.25rem;
+}
+
+/* アクションボタン */
+.action-buttons {
+    text-align: center;
+}
+
+.action-buttons .btn {
+    padding: 0.75rem 2rem;
+    font-size: 1.1rem;
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+    .calendar-day {
+        height: 80px;
+        padding: 0.25rem;
+        font-size: 0.8rem;
+    }
+    
+    .day-info {
+        font-size: 0.75rem;
+    }
+    
+    .wage {
+        font-size: 0.7rem;
+    }
+    
+    .working-badge {
+        font-size: 0.6rem;
+        padding: 0.1rem 0.3rem;
+    }
+    
+    .calendar-title {
+        font-size: 1.2rem;
+    }
+    
+    .monthly-wage .amount,
+    .achievement .achievement-percentage {
+        font-size: 2rem;
+    }
+}
+
+/* 有給休暇カード */
+.paid-leave-current .leave-days {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #00b894;
+    margin-bottom: 0.5rem;
+}
+
+.paid-leave-next .next-grant-info {
+    text-align: center;
+}
+
+.paid-leave-next .grant-date {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #2d3436;
+    margin-bottom: 0.5rem;
+}
+
+.paid-leave-next .grant-days {
+    font-size: 1.1rem;
+    color: #00b894;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.paid-leave-next .countdown {
+    font-size: 0.9rem;
+    color: #636e72;
+    margin-bottom: 1rem;
+}
+
+.attendance-requirement {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 10px;
+    padding: 1rem;
+    margin-top: 1rem;
+}
+
+.requirement-text {
+    font-weight: 600;
+    color: #856404;
+    margin-bottom: 0.5rem;
+}
+
+.requirement-text .highlight {
+    color: #e17055;
+    font-size: 1.2em;
+}
+
+.attendance-rate {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+.eligible-badge {
+    background: #d4edda;
+    color: #155724;
+    padding: 0.75rem 1rem;
+    border-radius: 10px;
+    font-weight: 600;
+    text-align: center;
+    margin-top: 1rem;
+}
+
+.no-next-grant {
+    font-size: 1.1rem;
+    color: #636e72;
+    text-align: center;
+    padding: 2rem 0;
+}
+
+.error-message {
+    color: #dc3545;
+    text-align: center;
+    padding: 1.5rem 0;
+    font-weight: 500;
+}
+
+@keyframes shine {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}

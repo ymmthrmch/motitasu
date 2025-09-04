@@ -85,9 +85,7 @@
         <form method="post" action="{% url 'clock_action' %}">
             {% csrf_token %}
             <input type="hidden" name="action_type" value="clock_in">
-            <button type="submit" class="clock-btn clock-in w-100">
-                <i class="fas fa-sign-in-alt"></i> 出勤
-            </button>
+            <button type="submit" class="clock-btn clock-in w-100">出勤</button>
         </form>
         {% endif %}
 
@@ -95,9 +93,7 @@
         <form method="post" action="{% url 'clock_action' %}">
             {% csrf_token %}
             <input type="hidden" name="action_type" value="break_start">
-            <button type="submit" class="clock-btn break-start w-100">
-                <i class="fas fa-coffee"></i> 休憩開始
-            </button>
+            <button type="submit" class="clock-btn break-start w-100">休憩開始</button>
         </form>
         {% endif %}
 
@@ -105,9 +101,7 @@
         <form method="post" action="{% url 'clock_action' %}">
             {% csrf_token %}
             <input type="hidden" name="action_type" value="break_end">
-            <button type="submit" class="clock-btn break-end w-100">
-                <i class="fas fa-play"></i> 休憩終了
-            </button>
+            <button type="submit" class="clock-btn break-end w-100">休憩終了</button>
         </form>
         {% endif %}
 
@@ -115,9 +109,7 @@
         <form method="post" action="{% url 'clock_action' %}">
             {% csrf_token %}
             <input type="hidden" name="action_type" value="clock_out">
-            <button type="submit" class="clock-btn clock-out w-100">
-                <i class="fas fa-sign-out-alt"></i> 退勤
-            </button>
+            <button type="submit" class="clock-btn clock-out w-100">退勤</button>
         </form>
         {% endif %}
     </div>
