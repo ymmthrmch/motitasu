@@ -6,8 +6,11 @@ from django.core.exceptions import ValidationError
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 import pytz
+import calendar
+from datetime import datetime, date, timedelta
 from .models import TimeRecord
 from .services import WorkTimeService
+from .services.paid_leave_service import PaidLeaveService
 
 @login_required
 def timeclock(request):
@@ -107,3 +110,122 @@ def get_current_time(request):
         'date': now_jst.strftime('%Y年%m月%d日'),
         'datetime': now_jst.strftime('%Y-%m-%d %H:%M:%S')
     })
+
+@login_required
+def dashboard(request):
+    """個人の勤務状況ダッシュボード"""
+    jst = pytz.timezone('Asia/Tokyo')
+    now = timezone.now().astimezone(jst)
+    
+    year = int(request.GET.get('year', now.year))
+    month = int(request.GET.get('month', now.month))
+    
+    service = WorkTimeService(request.user)
+    
+    monthly_summary = service.get_monthly_summary(year, month)
+    
+    cal = calendar.monthcalendar(year, month)
+    
+    daily_data = {}
+    for daily in monthly_summary['daily_summaries']:
+        day = daily['date'].day
+        daily_data[day] = {
+            'work_hours': daily['work_hours'],
+            'wage': daily['wage'],
+            'has_clock_out': daily['has_clock_out']
+        }
+    
+    calendar_weeks = []
+    for week in cal:
+        week_data = []
+        for day in week:
+            if day == 0:
+                week_data.append(None)
+            else:
+                day_data = daily_data.get(day, {})
+                week_data.append({
+                    'day': day,
+                    'work_hours': day_data.get('work_hours', 0),
+                    'wage': day_data.get('wage', 0),
+                    'has_data': day in daily_data,
+                    'is_today': (year == now.year and month == now.month and day == now.day),
+                    'has_clock_out': day_data.get('has_clock_out', False)
+                })
+        calendar_weeks.append(week_data)
+    
+    if month == 1:
+        prev_month = {'year': year - 1, 'month': 12}
+        next_month = {'year': year, 'month': 2}
+    elif month == 12:
+        prev_month = {'year': year, 'month': 11}
+        next_month = {'year': year + 1, 'month': 1}
+    else:
+        prev_month = {'year': year, 'month': month - 1}
+        next_month = {'year': year, 'month': month + 1}
+    
+    if next_month['year'] > now.year or (next_month['year'] == now.year and next_month['month'] > now.month):
+        next_month = None
+    
+    all_time_stats = get_all_time_stats(request.user)
+    
+    # 有給休暇情報を取得
+    paid_leave_service = PaidLeaveService(request.user)
+    paid_leave_status = paid_leave_service.get_paid_leave_status()
+    
+    context = {
+        'year': year,
+        'month': month,
+        'month_name': calendar.month_name[month],
+        'calendar_weeks': calendar_weeks,
+        'monthly_summary': monthly_summary,
+        'prev_month': prev_month,
+        'next_month': next_month,
+        'all_time_stats': all_time_stats,
+        'paid_leave_status': paid_leave_status,
+        'weekdays': ['月', '火', '水', '木', '金', '土', '日']
+    }
+    
+    return render(request, 'timeclock/dashboard.html', context)
+
+def get_all_time_stats(user):
+    """全期間の勤務統計を取得"""
+    jst = pytz.timezone('Asia/Tokyo')
+    
+    # 最初の打刻記録を取得
+    first_record = TimeRecord.objects.filter(
+        user=user,
+        clock_type='clock_in'
+    ).order_by('timestamp').first()
+    
+    if not first_record:
+        return {
+            'total_days': 0,
+            'total_hours': 0,
+            'total_wage': 0,
+            'start_date': None
+        }
+    
+    start_date = first_record.timestamp.astimezone(jst).date()
+    today = timezone.now().astimezone(jst).date()
+    
+    service = WorkTimeService(user)
+    total_hours = 0
+    total_wage = 0
+    work_days = 0
+    
+    # 各日の統計を集計
+    current_date = start_date
+    while current_date <= today:
+        daily = service.get_daily_summary(current_date)
+        if daily['work_hours'] > 0:
+            total_hours += daily['work_hours']
+            total_wage += daily['wage']
+            work_days += 1
+        current_date += timedelta(days=1)
+    
+    return {
+        'total_days': work_days,
+        'total_hours': round(total_hours, 1),
+        'total_wage': total_wage,
+        'start_date': start_date
+    }

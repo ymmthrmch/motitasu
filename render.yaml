@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: motitasu
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python manage.py runserver 0.0.0.0:$PORT
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: motitasu.settings.production
+      - key: PYTHONPATH
+        value: .
+
+  - type: cron
+    name: paid-leave-processor
+    env: python
+    buildCommand: pip install -r requirements.txt
+    schedule: "0 16 * * *"  # 毎日午前1時（JST）に実行
+    startCommand: python manage.py process_paid_leaves --fix-inconsistencies
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: motitasu.settings.production
+      - key: PYTHONPATH
+        value: .

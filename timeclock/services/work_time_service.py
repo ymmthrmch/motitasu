@@ -3,7 +3,7 @@ from typing import Dict, List, Optional, Any
 from django.utils import timezone
 import pytz
 
-from ..models import TimeRecord
+from ..models import TimeRecord, MonthlyTarget
 
 
 class WorkTimeService:
@@ -128,7 +128,12 @@ class WorkTimeService:
             current_date += timedelta(days=1)
         
         # 目標月収に対する達成率を計算
-        target_income = self.user.target_monthly_income if hasattr(self.user, 'target_monthly_income') and self.user.target_monthly_income else None
+        try:
+            target_obj = MonthlyTarget.objects.get(user=self.user, year=year, month=month)
+            target_income = target_obj.target_income
+        except MonthlyTarget.DoesNotExist:
+            target_income = None
+        
         achievement_rate = None
         if target_income and target_income > 0:
             achievement_rate = round((total_wage / target_income) * 100, 1)

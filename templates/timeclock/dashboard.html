@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}勤務ダッシュボード{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'timeclock/css/dashboard.css' %}?v={% now 'U' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <h1 class="text-center mb-4">勤務ダッシュボード</h1>
+
+    <!-- カレンダー -->
+    <div class="calendar-container">
+        <div class="calendar-header">
+            <div class="calendar-nav">
+                {% if prev_month %}
+                <a href="?year={{ prev_month.year }}&month={{ prev_month.month }}" class="nav-arrow">&#8249;</a>
+                {% else %}
+                <span class="nav-arrow disabled">&#8249;</span>
+                {% endif %}
+                
+                <h3 class="calendar-title">{{ year }}年 {{ month }}月</h3>
+                
+                {% if next_month %}
+                <a href="?year={{ next_month.year }}&month={{ next_month.month }}" class="nav-arrow">&#8250;</a>
+                {% else %}
+                <span class="nav-arrow disabled">&#8250;</span>
+                {% endif %}
+            </div>
+            
+            <a href="?year={% now 'Y' %}&month={% now 'n' %}" class="btn btn-sm btn-outline-primary">今月</a>
+        </div>
+        
+        <table class="calendar-table">
+            <thead>
+                <tr>
+                    {% for day in weekdays %}
+                    <th class="{% if forloop.last %}sunday{% elif forloop.counter == 6 %}saturday{% endif %}">{{ day }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for week in calendar_weeks %}
+                <tr>
+                    {% for day_data in week %}
+                        {% if day_data %}
+                        <td class="calendar-day {% if day_data.is_today %}today{% endif %} {% if day_data.has_data %}has-data{% endif %}">
+                            <div class="day-number">{{ day_data.day }}</div>
+                            {% if day_data.has_data %}
+                                <div class="day-info">
+                                    <div class="work-hours">{{ day_data.work_hours }}h</div>
+                                    <div class="wage">{{ day_data.wage|floatformat:0 }}円</div>
+                                    {% if not day_data.has_clock_out %}
+                                        <div class="working-badge">勤務中</div>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        </td>
+                        {% else %}
+                        <td class="calendar-day empty"></td>
+                        {% endif %}
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- 月次サマリーカード -->
+    <div class="row mb-4">
+        <div class="col-lg-4 col-md-6 mb-3">
+            <div class="summary-card monthly-wage">
+                <div class="card-header">
+                    <h5>今月の給与</h5>
+                </div>
+                <div class="card-body">
+                    <div class="amount">{{ monthly_summary.total_wage|floatformat:0|default:"0" }}円</div>
+                    <div class="sub-info">{{ monthly_summary.work_days }}日勤務 / {{ monthly_summary.total_work_hours }}時間</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4 col-md-6 mb-3">
+            <div class="summary-card achievement">
+                <div class="card-header">
+                    <h5>目標達成率</h5>
+                </div>
+                <div class="card-body">
+                    {% if monthly_summary.achievement_rate is not None %}
+                        <div class="achievement-percentage">{{ monthly_summary.achievement_rate }}%</div>
+                        <div class="progress-container">
+                            <div class="progress-bar-dashboard" data-achievement="{{ monthly_summary.achievement_rate }}"></div>
+                        </div>
+                        <div class="sub-info">目標: {{ monthly_summary.target_income|floatformat:0 }}円</div>
+                    {% else %}
+                        <div class="no-target">目標未設定</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4 col-md-12 mb-3">
+            <div class="summary-card all-time">
+                <div class="card-header">
+                    <h5>累計統計</h5>
+                </div>
+                <div class="card-body">
+                    <div class="stats-row">
+                        <span class="label">総勤務日数:</span>
+                        <span class="value">{{ all_time_stats.total_days }}日</span>
+                    </div>
+                    <div class="stats-row">
+                        <span class="label">総労働時間:</span>
+                        <span class="value">{{ all_time_stats.total_hours }}時間</span>
+                    </div>
+                    <div class="stats-row">
+                        <span class="label">総給与:</span>
+                        <span class="value">{{ all_time_stats.total_wage|floatformat:0 }}円</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 有給休暇情報 -->
+    <div class="row mb-4">
+        <div class="col-lg-6 col-md-12 mb-3">
+            <div class="summary-card paid-leave-current">
+                <div class="card-header">
+                    <h5>現在の有給休暇</h5>
+                </div>
+                <div class="card-body">
+                    {% if paid_leave_status.error %}
+                        <div class="error-message">{{ paid_leave_status.error }}</div>
+                    {% else %}
+                        <div class="leave-days">{{ paid_leave_status.current_days }}日</div>
+                        <div class="sub-info">勤続{{ paid_leave_status.service_months }}ヶ月</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6 col-md-12 mb-3">
+            <div class="summary-card paid-leave-next">
+                <div class="card-header">
+                    <h5>次回付与予定</h5>
+                </div>
+                <div class="card-body">
+                    {% if paid_leave_status.next_grant %}
+                        <div class="next-grant-info">
+                            <div class="grant-date">{{ paid_leave_status.next_grant.grant_date|date:"Y年m月d日" }}</div>
+                            <div class="grant-days">+{{ paid_leave_status.next_grant.grant_days }}日付与予定</div>
+                            <div class="countdown">あと{{ paid_leave_status.next_grant.days_until_grant }}日</div>
+                            
+                            {% if paid_leave_status.next_grant.attendance_info.remaining_work_days > 0 %}
+                                <div class="attendance-requirement">
+                                    <div class="requirement-text">
+                                        あと<span class="highlight">{{ paid_leave_status.next_grant.attendance_info.remaining_work_days }}日</span>出勤が必要
+                                    </div>
+                                    <div class="attendance-rate">
+                                        現在の出勤率: {{ paid_leave_status.next_grant.attendance_info.attendance_rate }}%
+                                        <small>（8割以上必要）</small>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <div class="eligible-badge">付与条件達成済み</div>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <div class="no-next-grant">次回付与予定なし</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- アクションボタン -->
+    <div class="action-buttons mt-4">
+        <a href="{% url 'timeclock' %}" class="btn btn-primary">打刻画面へ</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'timeclock/js/dashboard.js' %}"></script>
+{% endblock %}
