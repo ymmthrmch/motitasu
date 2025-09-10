@@ -10,7 +10,8 @@ import calendar
 from datetime import datetime, date, timedelta
 from .models import TimeRecord
 from .services import WorkTimeService
-from .services.paid_leave_service import PaidLeaveService
+from .services.paid_leave_calculator import PaidLeaveCalculator
+from .services.paid_leave_balance_manager import PaidLeaveBalanceManager
 
 @login_required
 def timeclock(request):
@@ -169,8 +170,25 @@ def dashboard(request):
     all_time_stats = get_all_time_stats(request.user)
     
     # 有給休暇情報を取得
-    paid_leave_service = PaidLeaveService(request.user)
-    paid_leave_status = paid_leave_service.get_paid_leave_status()
+    balance_manager = PaidLeaveBalanceManager(request.user)
+    paid_leave_balance = balance_manager.get_current_balance()
+    
+    # 次回の有給付与予定を計算
+    calculator = PaidLeaveCalculator(request.user)
+    next_grant_info = None
+    if hasattr(request.user, 'hire_date') and request.user.hire_date:
+        # 次回の付与日を計算（現在の日付より後の最初の付与日を探す）
+        grant_count = 1
+        while grant_count <= 20:  # 安全のため20回まで
+            grant_date = calculator.calculate_grant_date(grant_count)
+            if grant_date > date.today():
+                next_grant_info = {
+                    'grant_date': grant_date,
+                    'grant_count': grant_count,
+                    'expected_days': calculator.determine_grant_days(grant_count, request.user.weekly_work_days)
+                }
+                break
+            grant_count += 1
     
     context = {
         'year': year,
@@ -181,8 +199,9 @@ def dashboard(request):
         'prev_month': prev_month,
         'next_month': next_month,
         'all_time_stats': all_time_stats,
-        'paid_leave_status': paid_leave_status,
-        'weekdays': ['月', '火', '水', '木', '金', '土', '日']
+        'weekdays': ['月', '火', '水', '木', '金', '土', '日'],
+        'paid_leave_balance': paid_leave_balance,
+        'next_grant_info': next_grant_info
     }
     
     return render(request, 'timeclock/dashboard.html', context)

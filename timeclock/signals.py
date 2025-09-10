@@ -1,63 +1,82 @@
+"""
+有給休暇関連シグナル処理
+"""
+
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
-from django.db import transaction
-import logging
+from datetime import date
 
-from .models import PaidLeaveRecord
+from .models import TimeRecord, PaidLeaveRecord
 
-logger = logging.getLogger(__name__)
+
+@receiver(post_save, sender=TimeRecord)
+@receiver(post_delete, sender=TimeRecord)
+def handle_time_record_change(sender, instance, **kwargs):
+    """
+    TimeRecord変更時の自動再判定
+    
+    処理内容:
+        1. 変更されたレコードの日付と対象ユーザーを特定
+        2. PaidLeaveAutoProcessorを使用して再判定処理を実行
+        3. シグナル無効化フラグをチェック（テスト時等）
+    """
+    try:
+        # シグナル無効化フラグをチェック（テスト時等で使用）
+        if getattr(handle_time_record_change, '_disabled', False):
+            return
+        
+        from .services.paid_leave_auto_processor import PaidLeaveAutoProcessor
+        
+        # 変更されたレコードの日付を取得
+        record_date = instance.timestamp.date()
+        
+        # 変更タイプを判定
+        if kwargs.get('created', False):
+            change_type = 'create'
+        elif sender == TimeRecord and 'delete' in str(kwargs):
+            change_type = 'delete'
+        else:
+            change_type = 'update'
+        
+        # 自動処理を実行
+        auto_processor = PaidLeaveAutoProcessor()
+        auto_processor.process_time_record_change(instance.user, record_date, change_type)
+        
+    except Exception as e:
+        # エラーログを記録（実際の運用時はログフレームワークを使用）
+        print(f"TimeRecord変更シグナルでエラー: {e}")
+
 
 @receiver(post_save, sender=PaidLeaveRecord)
-def update_paid_leave_on_save(sender, instance, created, **kwargs):
-    """PaidLeaveRecord作成時にcurrent_paid_leaveを更新"""
-    if not created:
-        return
-    
-    user = instance.user
-    old_value = user.current_paid_leave
-    
-    try:
-        with transaction.atomic():
-            if instance.record_type == 'grant':
-                user.current_paid_leave += instance.days
-                logger.info(f"有給付与: {user.name} +{instance.days}日 ({old_value}→{user.current_paid_leave})")
-                
-            elif instance.record_type == 'use':
-                user.current_paid_leave = max(0, user.current_paid_leave - instance.days)
-                logger.info(f"有給使用: {user.name} -{instance.days}日 ({old_value}→{user.current_paid_leave})")
-                
-            elif instance.record_type == 'expire':
-                user.current_paid_leave = max(0, user.current_paid_leave - instance.days)
-                logger.info(f"有給時効: {user.name} -{instance.days}日 ({old_value}→{user.current_paid_leave})")
-            
-            user.save(update_fields=['current_paid_leave'])
-            
-    except Exception as e:
-        logger.error(f"有給日数更新エラー: {user.name} - {e}")
-        raise
-
 @receiver(post_delete, sender=PaidLeaveRecord)
-def update_paid_leave_on_delete(sender, instance, **kwargs):
-    """PaidLeaveRecord削除時に巻き戻し"""
-    user = instance.user
-    old_value = user.current_paid_leave
+def handle_paid_leave_record_change(sender, instance, **kwargs):
+    """
+    PaidLeaveRecord変更時の残日数更新
     
+    処理内容:
+        1. 有給使用・付与・取消記録の変更を検知
+        2. PaidLeaveAutoProcessorを使用して残日数更新処理を実行
+        3. シグナル無効化フラグをチェック（テスト時等）
+    """
     try:
-        with transaction.atomic():
-            if instance.record_type == 'grant':
-                user.current_paid_leave = max(0, user.current_paid_leave - instance.days)
-                logger.info(f"有給付与取消: {user.name} -{instance.days}日 ({old_value}→{user.current_paid_leave})")
-                
-            elif instance.record_type == 'use':
-                user.current_paid_leave += instance.days
-                logger.info(f"有給使用取消: {user.name} +{instance.days}日 ({old_value}→{user.current_paid_leave})")
-                
-            elif instance.record_type == 'expire':
-                user.current_paid_leave += instance.days
-                logger.info(f"有給時効取消: {user.name} +{instance.days}日 ({old_value}→{user.current_paid_leave})")
-            
-            user.save(update_fields=['current_paid_leave'])
-            
+        # シグナル無効化フラグをチェック（テスト時等で使用）
+        if getattr(handle_paid_leave_record_change, '_disabled', False):
+            return
+        
+        from .services.paid_leave_auto_processor import PaidLeaveAutoProcessor
+        
+        # 変更タイプを判定
+        if kwargs.get('created', False):
+            change_type = 'create'
+        elif sender == PaidLeaveRecord and 'delete' in str(kwargs):
+            change_type = 'delete'
+        else:
+            change_type = 'update'
+        
+        # 自動処理を実行
+        auto_processor = PaidLeaveAutoProcessor()
+        auto_processor.process_paid_leave_record_change(instance.user, instance, change_type)
+        
     except Exception as e:
-        logger.error(f"有給日数巻き戻しエラー: {user.name} - {e}")
-        raise
+        # エラーログを記録（実際の運用時はログフレームワークを使用）
+        print(f"PaidLeaveRecord変更シグナルでエラー: {e}")
