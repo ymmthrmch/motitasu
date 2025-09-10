@@ -154,7 +154,7 @@
                             <div class="grant-days">+{{ paid_leave_status.next_grant.grant_days }}日付与予定</div>
                             <div class="countdown">あと{{ paid_leave_status.next_grant.days_until_grant }}日</div>
                             
-                            {% if paid_leave_status.next_grant.attendance_info.remaining_work_days > 0 %}
+                            {% if paid_leave_status.next_grant.attendance_info.is_eligible %}
                                 <div class="attendance-requirement">
                                     <div class="requirement-text">
                                         あと<span class="highlight">{{ paid_leave_status.next_grant.attendance_info.remaining_work_days }}日</span>出勤が必要
