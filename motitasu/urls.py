@@ -22,5 +22,6 @@ urlpatterns = [
     path('', views.home, name='home'),
     path('accounts/', include('accounts.urls')),
     path('timeclock/', include('timeclock.urls')),
+    path('bulletin/', include('bulletin_board.urls')),
     path('admin/', admin.site.urls),
 ]

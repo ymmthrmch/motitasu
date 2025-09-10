@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'accounts',
     'timeclock',
+    'bulletin_board',
 ]
 
 MIDDLEWARE = [
