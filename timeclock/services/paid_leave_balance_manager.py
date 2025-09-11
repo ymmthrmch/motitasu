@@ -8,6 +8,7 @@ from typing import List, Tuple
 from django.db.models import Sum
 
 from timeclock.models import PaidLeaveRecord
+from .paid_leave_calculator import PaidLeaveCalculator
 
 
 @dataclass
@@ -47,6 +48,7 @@ class PaidLeaveBalanceManager:
             user: Userモデルのインスタンス
         """
         self.user = user
+        self.calculator = PaidLeaveCalculator(user)
     
     def get_current_balance(self) -> int:
         """
@@ -97,8 +99,9 @@ class PaidLeaveBalanceManager:
         Rules:
             - 各付与年度の残日数を計算
             - 時効が近い順に並べる
+            - 同一日の複数付与は合算して処理
         """
-        # 付与記録を取得
+        # 付与記録を取得（同一日の場合は合算）
         grant_records = PaidLeaveRecord.objects.filter(
             user=self.user,
             record_type='grant'
@@ -108,42 +111,55 @@ class PaidLeaveBalanceManager:
         total_balance = 0
         today = date.today()
         
+        # 同一grant_dateをグループ化
+        grant_groups = {}
         for grant_record in grant_records:
+            grant_date = grant_record.grant_date
+            if grant_date not in grant_groups:
+                grant_groups[grant_date] = {
+                    'total_days': 0,
+                    'expiry_date': grant_record.expiry_date
+                }
+            grant_groups[grant_date]['total_days'] += grant_record.days
+        
+        # 各付与日グループごとに処理
+        for grant_date, grant_info in sorted(grant_groups.items()):
             # この付与日の使用日数
             used_days = PaidLeaveRecord.objects.filter(
                 user=self.user,
                 record_type='use',
-                grant_date=grant_record.grant_date
+                grant_date=grant_date
             ).aggregate(total=Sum('days'))['total'] or 0
             
             # この付与日の時効日数
             expired_days = PaidLeaveRecord.objects.filter(
                 user=self.user,
                 record_type='expire',
-                grant_date=grant_record.grant_date
+                grant_date=grant_date
             ).aggregate(total=Sum('days'))['total'] or 0
             
             # この付与日の取消日数
             cancelled_days = PaidLeaveRecord.objects.filter(
                 user=self.user,
                 record_type='cancel',
-                grant_date=grant_record.grant_date
+                grant_date=grant_date
             ).aggregate(total=Sum('days'))['total'] or 0
             
-            # 残日数計算
-            remaining_days = grant_record.days - used_days - expired_days - cancelled_days
+            # 残日数計算（同一日の複数付与を合算）
+            total_grant_days = grant_info['total_days']
+            remaining_days = total_grant_days - used_days - expired_days - cancelled_days
             remaining_days = max(0, remaining_days)
             
             # 時効まで日数
-            days_until_expiry = (grant_record.expiry_date - today).days
+            days_until_expiry = (grant_info['expiry_date'] - today).days
             
-            # 残日数に関係なく全ての付与記録を追加
+            # 付与日別残日数情報を作成
             grant_balance = GrantDateBalance(
-                grant_date=grant_record.grant_date,
-                original_days=grant_record.days,
+                grant_date=grant_date,
+                original_days=total_grant_days,  # 同一日の合計付与日数
                 used_days=used_days,
                 remaining_days=remaining_days,
-                expiry_date=grant_record.expiry_date,
+                expiry_date=grant_info['expiry_date'],
                 days_until_expiry=days_until_expiry
             )
             balance_by_grant_date.append(grant_balance)
@@ -185,82 +201,3 @@ class PaidLeaveBalanceManager:
         self.user.save(update_fields=['current_paid_leave'])
         return new_balance
     
-    def calculate_partial_cancellation(self, target_cancel_days: int, target_date: date) -> Tuple[int, int]:
-        """
-        部分取消の計算（残日数がマイナスにならない範囲で取消）
-        cancellationのPaidLeaveRecordを作成
-        
-        Args:
-            target_cancel_days: 取消したい日数
-            target_date: 取消日
-            
-        Returns:
-            tuple[int, int]: (実際の取消日数, 取消後の残日数)
-            
-        Rules:
-            - 残日数がマイナスにならない範囲で取消
-            - actual_cancellation = min(target_cancel_days, current_balance)
-            - remaining_after = current_balance - actual_cancellation
-            - cancellationのPaidLeaveRecordを作成
-        """
-        if target_cancel_days < 0:
-            target_cancel_days = 0
-        
-        current_balance = self.get_current_balance()
-        if current_balance < 0:
-            current_balance = 0
-        
-        actual_cancellation = min(target_cancel_days, current_balance)
-        remaining_after = current_balance - actual_cancellation
-        
-        # 取消記録を作成（0日より大きい場合のみ）
-        if actual_cancellation > 0:
-            # 最新の付与記録から取り消す（LIFO: Last In First Out）
-            grant_records = PaidLeaveRecord.objects.filter(
-                user=self.user,
-                record_type='grant'
-            ).order_by('-grant_date')
-            
-            remaining_to_cancel = actual_cancellation
-            
-            for grant_record in grant_records:
-                if remaining_to_cancel <= 0:
-                    break
-                
-                # この付与日の現在残日数を計算
-                used_days = PaidLeaveRecord.objects.filter(
-                    user=self.user,
-                    record_type='use',
-                    grant_date=grant_record.grant_date
-                ).aggregate(total=Sum('days'))['total'] or 0
-                
-                expired_days = PaidLeaveRecord.objects.filter(
-                    user=self.user,
-                    record_type='expire',
-                    grant_date=grant_record.grant_date
-                ).aggregate(total=Sum('days'))['total'] or 0
-                
-                cancelled_days = PaidLeaveRecord.objects.filter(
-                    user=self.user,
-                    record_type='cancel',
-                    grant_date=grant_record.grant_date
-                ).aggregate(total=Sum('days'))['total'] or 0
-                
-                available_to_cancel = grant_record.days - used_days - expired_days - cancelled_days
-                available_to_cancel = max(0, available_to_cancel)
-                
-                if available_to_cancel > 0:
-                    cancel_from_this_grant = min(remaining_to_cancel, available_to_cancel)
-                    
-                    PaidLeaveRecord.objects.create(
-                        user=self.user,
-                        grant_date=grant_record.grant_date,
-                        cancellation_date=target_date,
-                        days=cancel_from_this_grant,
-                        record_type='cancel',
-                        expiry_date=grant_record.expiry_date
-                    )
-                    
-                    remaining_to_cancel -= cancel_from_this_grant
-        
-        return actual_cancellation, remaining_after

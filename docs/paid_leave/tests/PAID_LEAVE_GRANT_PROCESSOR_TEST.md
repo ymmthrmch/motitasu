@@ -13,14 +13,15 @@
 **設定値**:
 - ユーザー: 入社日2023年1月1日、週所定労働日数5日、current_paid_leave=0
 - PaidLeaveJudgment:
-  - grant_count: 1
+  - user: テストユーザー
+  - grant_count: 1（付与回数として参照用）
   - judgment_date: 2023年7月1日
   - period_start: 2023年1月1日
   - period_end: 2023年6月30日
   - is_eligible: True
   - grant_days: 10
   - expiry_date: 2025年7月1日
-  - reason: "付与条件を満たしています"
+  - description: "付与条件を満たしています"
 
 **検証値と期待結果**:
 - 作成されるPaidLeaveRecord:
@@ -29,7 +30,7 @@
   - grant_date: 2023年7月1日
   - days: 10
   - expiry_date: 2025年7月1日
-  - reason: "付与条件を満たしています"
+  - description: "付与条件を満たしています"
 - user.current_paid_leave: 10日（更新確認）
 - 戻り値: 作成されたPaidLeaveRecordオブジェクト
 
@@ -38,11 +39,12 @@
 **設定値**:
 - ユーザー: 入社日2023年1月1日、週所定労働日数5日、current_paid_leave=0
 - PaidLeaveJudgment:
-  - grant_count: 1
+  - user: テストユーザー
+  - grant_count: 1（付与回数として参照用）
   - judgment_date: 2023年7月1日
   - is_eligible: False
   - grant_days: 0
-  - reason: "出勤率が80%未満のため付与なし"
+  - description: "出勤率が80%未満のため付与なし"
 
 **検証値と期待結果**:
 - PaidLeaveRecordは作成されない
@@ -74,7 +76,7 @@
 **設定値**:
 - ユーザー: 入社日2023年1月1日、週所定労働日数3日、current_paid_leave=0
 - PaidLeaveJudgment:
-  - grant_count: 1
+  - grant_count: 1（付与回数として参照用）
   - judgment_date: 2023年7月1日
   - is_eligible: True
   - grant_days: 5
@@ -90,29 +92,18 @@
 ### 2. 取消処理実行メソッド（execute_cancellation）のテスト
 
 #### テストケース2-1: 通常の取消処理実行
-**目的**: 未使用の有給に対する全額取消処理を検証
+**目的**: 未使用の有給に対する取消処理を検証（付与記録の日数減算）
 **設定値**:
 - ユーザー: 入社日2022年1月1日、週所定労働日数5日、current_paid_leave=10
-- 既存PaidLeaveRecord: 付与10日（grant_date=2022年7月1日）
+- 既存PaidLeaveRecord: 付与10日（grant_date=2022年7月1日）※1回目付与日
 - 取消パラメータ:
-  - grant_date: 2022年7月1日
-  - cancellation_date: 2022年8月1日
-  - reason: "再判定により出勤率不足のため"
+  - target_date: 2022年7月1日（取消対象の付与日）
+  - cancellation_days: 10
 
 **検証値と期待結果**:
-- CancellationResult:
-  - grant_count: 1
-  - target_cancel_days: 10
-  - actual_cancelled_days: 10
-  - remaining_balance: 0
-  - was_partial: False
-  - cancellation_date: 2022年8月1日
-  - reason: "再判定により出勤率不足のため"
-- 作成されるPaidLeaveRecord:
-  - record_type: 'cancel'
-  - days: 10
-  - cancellation_date: 2022年8月1日
-  - reason: "再判定により出勤率不足のため"
+- 戻り値: List[PaidLeaveRecord]（編集された付与記録のリスト）
+- 既存付与記録の変更:
+  - 元のdays: 10 → 変更後days: 0（取消処理により減算）
 - user.current_paid_leave: 0日（更新確認）
 
 #### テストケース2-2: 部分取消処理の実行
@@ -123,22 +114,14 @@
   - 付与10日（grant_date=2022年7月1日）
   - 使用5日（used_date=2022年8月1日）
 - 取消パラメータ:
-  - grant_date: 2022年7月1日
-  - cancellation_date: 2022年9月1日
-  - reason: "再判定により"
+  - target_date: 2022年7月1日（取消対象の付与日）
+  - cancellation_days: 10
 
 **検証値と期待結果**:
-- CancellationResult:
-  - grant_count: 1
-  - target_cancel_days: 10
-  - actual_cancelled_days: 5
-  - remaining_balance: 0
-  - was_partial: True
-  - cancellation_date: 2022年9月1日
-- 作成されるPaidLeaveRecord:
-  - record_type: 'cancel'
-  - days: 5（実際に取り消された日数）
-- user.current_paid_leave: 0日
+- 戻り値: List[PaidLeaveRecord]（編集された付与記録のリスト）
+- 既存付与記録の変更:
+  - 元のdays: 10 → 変更後days: 5（使用済み分のみ残る）
+- user.current_paid_leave: 0日（残日数がマイナスにならない範囲で取消）
 
 #### テストケース2-3: 残日数不足時の部分取消処理
 **目的**: 取消対象より現在残日数が少ない場合の処理を検証
@@ -148,13 +131,13 @@
   - 付与10日（grant_date=2022年7月1日）
   - 使用7日
 - 取消パラメータ:
-  - grant_date: 2022年7月1日
+  - grant_date: 2022年7月1日（1回目付与を取消）
   - cancellation_date: 2022年9月1日
-  - reason: "再判定により"
+  - description: "再判定により"
 
 **検証値と期待結果**:
 - CancellationResult:
-  - grant_count: 1
+  - grant_date: 2022年7月1日（取消対象の付与日）
   - target_cancel_days: 10
   - actual_cancelled_days: 3
   - remaining_balance: 0
@@ -171,13 +154,13 @@
   - 付与10日（grant_date=2022年7月1日）
   - 使用10日（全て使用済み）
 - 取消パラメータ:
-  - grant_date: 2022年7月1日
+  - grant_date: 2022年7月1日（1回目付与を取消）
   - cancellation_date: 2022年9月1日
-  - reason: "再判定により"
+  - description: "再判定により"
 
 **検証値と期待結果**:
 - CancellationResult:
-  - grant_count: 1
+  - grant_date: 2022年7月1日（取消対象の付与日）
   - target_cancel_days: 10
   - actual_cancelled_days: 0
   - remaining_balance: 0
@@ -195,11 +178,11 @@
 - 取消パラメータ:
   - grant_date: 2021年7月1日（1回目のみ取消）
   - cancellation_date: 2022年9月1日
-  - reason: "再判定により"
+  - description: "再判定により"
 
 **検証値と期待結果**:
 - CancellationResult:
-  - grant_count: 1
+  - grant_date: 2021年7月1日（取消対象の付与日）
   - target_cancel_days: 10
   - actual_cancelled_days: 8（10-2）
   - remaining_balance: 10（18-8）
@@ -222,7 +205,7 @@
   - record_type: 'expire'
   - days: 8（10-2）
   - expiry_date: 2022年7月1日
-  - reason: "有効期限による時効消滅"
+  - description: "有効期限による時効消滅"
 - user.current_paid_leave: 0日（8日分が時効）
 - 戻り値: [作成された時効記録のPaidLeaveRecord]
 

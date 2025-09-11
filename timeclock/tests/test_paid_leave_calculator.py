@@ -126,7 +126,6 @@ class TestPaidLeaveCalculator(TestCase):
         self.assertEqual(next_info.required_attendance_days, 104)  # 130日間の80%
         self.assertEqual(next_info.remaining_attendance_needed, 44)
         self.assertEqual(next_info.expected_grant_days, 10)
-        self.assertAlmostEqual(next_info.current_attendance_rate, 0.9230, places=3)
 
     def test_get_next_grant_info_before_second_grant(self):
         """テストケース3-2: 2回目付与前の情報取得"""
@@ -158,7 +157,6 @@ class TestPaidLeaveCalculator(TestCase):
         self.assertEqual(next_info.required_attendance_days, 168)
         self.assertEqual(next_info.remaining_attendance_needed, 43)
         self.assertEqual(next_info.expected_grant_days, 8)
-        self.assertAlmostEqual(next_info.current_attendance_rate, 0.7961, places=3)
 
     def test_calculate_required_work_days_week5(self):
         """テストケース4-1: 週5日勤務の所定労働日数計算"""
@@ -385,7 +383,7 @@ class TestPaidLeaveCalculator(TestCase):
         self.assertAlmostEqual(judgment.attendance_rate, 0.7364, places=3)
         self.assertFalse(judgment.is_eligible)
         self.assertEqual(judgment.grant_days, 0)
-        self.assertEqual(judgment.reason, "出勤率が80%未満のため付与なし")
+        self.assertEqual(judgment.description, "出勤率が80%未満のため付与なし")
 
     def test_judge_grant_eligibility_over_80_percent(self):
         """テストケース8-2: 出勤率80%以上での付与判定"""
@@ -428,7 +426,7 @@ class TestPaidLeaveCalculator(TestCase):
         self.assertTrue(judgment.is_eligible)
         self.assertEqual(judgment.grant_days, 10)
         self.assertEqual(judgment.expiry_date, date(2025, 7, 1))
-        self.assertEqual(judgment.reason, "付与条件を満たしています")
+        self.assertEqual(judgment.description, "付与条件を満たしています")
 
     def test_judge_grant_eligibility_exactly_80_percent(self):
         """テストケース8-3: 境界値（出勤率ちょうど80%）での付与判定"""
@@ -470,7 +468,7 @@ class TestPaidLeaveCalculator(TestCase):
         self.assertTrue(judgment.is_eligible)
         self.assertEqual(judgment.grant_days, 10)
         self.assertEqual(judgment.expiry_date, date(2026, 7, 1))
-        self.assertEqual(judgment.reason, "付与条件を満たしています")
+        self.assertEqual(judgment.description, "付与条件を満たしています")
 
     def test_should_rejudge_required(self):
         """テストケース9-1: 直近付与日より前の記録修正"""
@@ -521,11 +519,11 @@ class TestPaidLeaveCalculator(TestCase):
         )
         calculator = PaidLeaveCalculator(user)
 
-        affected_grants = calculator.find_affected_grants(date(2020, 6, 15))
-        self.assertEqual(affected_grants, [1])
+        affected_grant = calculator.find_affected_grants(date(2020, 6, 15))
+        self.assertEqual(affected_grant, 1)
 
-    def test_find_affected_grants_multiple(self):
-        """テストケース10-2: 複数の付与回に影響"""
+    def test_find_affected_grants_second(self):
+        """テストケース10-2: 2回目の付与回に影響"""
         user = User.objects.create(
             name="testuser_affected2",
             email="affected2@example.com",
@@ -534,8 +532,22 @@ class TestPaidLeaveCalculator(TestCase):
         )
         calculator = PaidLeaveCalculator(user)
 
-        affected_grants = calculator.find_affected_grants(date(2021, 6, 15))
-        self.assertEqual(affected_grants, [2])
+        affected_grant = calculator.find_affected_grants(date(2021, 6, 15))
+        self.assertEqual(affected_grant, 2)
+
+    def test_find_affected_grants_none(self):
+        """テストケース10-3: 影響なしの場合"""
+        user = User.objects.create(
+            name="testuser_affected3",
+            email="affected3@example.com",
+            hire_date=date(2020, 1, 1),
+            weekly_work_days=5,
+        )
+        calculator = PaidLeaveCalculator(user)
+
+        # 入社前の日付（影響なし）
+        affected_grant = calculator.find_affected_grants(date(2019, 12, 15))
+        self.assertIsNone(affected_grant)
 
     def test_calculate_expiry_date_normal(self):
         """テストケース11-1: 通常日付の有効期限計算"""

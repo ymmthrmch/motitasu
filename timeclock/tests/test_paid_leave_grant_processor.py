@@ -5,7 +5,8 @@ PaidLeaveGrantProcessorクラスのテストモジュール
 from datetime import date
 from django.test import TestCase
 from django.contrib.auth import get_user_model
-from timeclock.services.paid_leave_grant_processor import PaidLeaveGrantProcessor, PaidLeaveJudgment, CancellationResult
+from timeclock.services.paid_leave_grant_processor import PaidLeaveGrantProcessor
+from timeclock.services.paid_leave_calculator import PaidLeaveJudgment
 from timeclock.models import PaidLeaveRecord
 
 User = get_user_model()
@@ -39,7 +40,7 @@ class TestPaidLeaveGrantProcessor(TestCase):
             is_eligible=True,
             grant_days=10,
             expiry_date=date(2025, 7, 1),
-            reason="付与条件を満たしています"
+            description="付与条件を満たしています"
         )
 
         # 付与処理を実行
@@ -72,7 +73,7 @@ class TestPaidLeaveGrantProcessor(TestCase):
             is_eligible=False,
             grant_days=0,
             expiry_date=date(2025, 7, 1),
-            reason="出勤率が80%未満のため付与なし"
+            description="出勤率が80%未満のため付与なし"
         )
 
         # 付与処理を実行
@@ -129,7 +130,7 @@ class TestPaidLeaveGrantProcessor(TestCase):
             is_eligible=True,
             grant_days=11,
             expiry_date=date(2025, 7, 1),
-            reason="付与条件を満たしています"
+            description="付与条件を満たしています"
         )
 
         # 付与処理を実行
@@ -168,7 +169,7 @@ class TestPaidLeaveGrantProcessor(TestCase):
             is_eligible=True,
             grant_days=5,
             expiry_date=date(2025, 7, 1),
-            reason="付与条件を満たしています"
+            description="付与条件を満たしています"
         )
 
         # 付与処理を実行
@@ -206,20 +207,20 @@ class TestPaidLeaveGrantProcessor(TestCase):
 
         # 取消処理を実行
         result = processor.execute_cancellation(
-            grant_count=1,
+            grant_date=date(2022, 7, 1),
             cancellation_date=date(2022, 8, 1),
-            reason="再判定により出勤率不足のため"
+            description="再判定により出勤率不足のため"
         )
 
         # 検証
         self.assertIsNotNone(result)
-        self.assertEqual(result.grant_count, 1)
+        self.assertEqual(result.grant_date, date(2022, 7, 1))
         self.assertEqual(result.target_cancel_days, 10)
         self.assertEqual(result.actual_cancelled_days, 10)
         self.assertEqual(result.remaining_balance, 0)
         self.assertEqual(result.was_partial, False)
         self.assertEqual(result.cancellation_date, date(2022, 8, 1))
-        self.assertEqual(result.reason, "再判定により出勤率不足のため")
+        self.assertEqual(result.description, "再判定により出勤率不足のため")
 
         # 取消記録が作成されていることを確認
         cancel_record = PaidLeaveRecord.objects.filter(
@@ -249,7 +250,6 @@ class TestPaidLeaveGrantProcessor(TestCase):
         # 既存の付与記録を作成
         PaidLeaveRecord.objects.create(
             user=user,
-            grant_count=1,
             grant_date=date(2022, 7, 1),
             days=10,
             record_type='grant',
@@ -267,13 +267,13 @@ class TestPaidLeaveGrantProcessor(TestCase):
 
         # 取消処理を実行
         result = processor.execute_cancellation(
-            grant_count=1,
+            grant_date=date(2022, 7, 1),
             cancellation_date=date(2022, 9, 1),
-            reason="再判定により"
+            description="再判定により"
         )
 
         # 検証
-        self.assertEqual(result.grant_count, 1)
+        self.assertEqual(result.grant_date, date(2022, 7, 1))
         self.assertEqual(result.target_cancel_days, 10)
         self.assertEqual(result.actual_cancelled_days, 5)
         self.assertEqual(result.remaining_balance, 0)
@@ -306,7 +306,6 @@ class TestPaidLeaveGrantProcessor(TestCase):
         # 既存の付与記録を作成
         PaidLeaveRecord.objects.create(
             user=user,
-            grant_count=1,
             grant_date=date(2022, 7, 1),
             days=10,
             record_type='grant',
@@ -324,12 +323,13 @@ class TestPaidLeaveGrantProcessor(TestCase):
 
         # 取消処理を実行
         result = processor.execute_cancellation(
-            grant_count=1,
+            grant_date=date(2022, 7, 1),
             cancellation_date=date(2022, 9, 1),
-            reason="再判定により"
+            description="再判定により"
         )
 
         # 検証
+        self.assertEqual(result.grant_date, date(2022, 7, 1))
         self.assertEqual(result.target_cancel_days, 10)
         self.assertEqual(result.actual_cancelled_days, 3)
         self.assertEqual(result.remaining_balance, 0)
@@ -361,7 +361,6 @@ class TestPaidLeaveGrantProcessor(TestCase):
         # 既存の付与記録を作成
         PaidLeaveRecord.objects.create(
             user=user,
-            grant_count=1,
             grant_date=date(2022, 7, 1),
             days=10,
             record_type='grant',
@@ -379,12 +378,13 @@ class TestPaidLeaveGrantProcessor(TestCase):
 
         # 取消処理を実行
         result = processor.execute_cancellation(
-            grant_count=1,
+            grant_date=date(2022, 7, 1),
             cancellation_date=date(2022, 9, 1),
-            reason="再判定により"
+            description="再判定により"
         )
 
         # 検証
+        self.assertEqual(result.grant_date, date(2022, 7, 1))
         self.assertEqual(result.target_cancel_days, 10)
         self.assertEqual(result.actual_cancelled_days, 0)
         self.assertEqual(result.remaining_balance, 0)
@@ -414,7 +414,6 @@ class TestPaidLeaveGrantProcessor(TestCase):
         # 1回目の付与記録を作成
         PaidLeaveRecord.objects.create(
             user=user,
-            grant_count=1,
             grant_date=date(2021, 7, 1),
             days=10,
             record_type='grant',
@@ -432,7 +431,6 @@ class TestPaidLeaveGrantProcessor(TestCase):
         # 2回目の付与記録を作成
         PaidLeaveRecord.objects.create(
             user=user,
-            grant_count=2,
             grant_date=date(2022, 7, 1),
             days=11,
             record_type='grant',
@@ -450,13 +448,13 @@ class TestPaidLeaveGrantProcessor(TestCase):
 
         # 1回目のみの取消処理を実行
         result = processor.execute_cancellation(
-            grant_count=1,
+            grant_date=date(2021, 7, 1),
             cancellation_date=date(2022, 9, 1),
-            reason="再判定により"
+            description="再判定により"
         )
 
         # 検証
-        self.assertEqual(result.grant_count, 1)
+        self.assertEqual(result.grant_date, date(2021, 7, 1))
         self.assertEqual(result.target_cancel_days, 10)
         self.assertEqual(result.actual_cancelled_days, 8)  # 10-2
         self.assertEqual(result.remaining_balance, 10)  # 18-8
@@ -480,7 +478,6 @@ class TestPaidLeaveGrantProcessor(TestCase):
         # 既存の付与記録を作成
         PaidLeaveRecord.objects.create(
             user=user,
-            grant_count=1,
             grant_date=date(2020, 7, 1),
             days=10,
             record_type='grant',
@@ -506,7 +503,7 @@ class TestPaidLeaveGrantProcessor(TestCase):
         self.assertEqual(expire_record.grant_date, date(2020, 7, 1))
         self.assertEqual(expire_record.days, 8)  # 10-2
         self.assertEqual(expire_record.expiry_date, date(2022, 7, 1))
-        self.assertEqual(expire_record.reason, "有効期限による時効消滅")
+        self.assertEqual(expire_record.description, "有効期限による時効消滅")
 
         # user.current_paid_leaveが更新されていることを確認
         user.refresh_from_db()
@@ -526,7 +523,6 @@ class TestPaidLeaveGrantProcessor(TestCase):
         # 1回目の付与記録を作成
         PaidLeaveRecord.objects.create(
             user=user,
-            grant_count=1,
             grant_date=date(2019, 7, 1),
             days=10,
             record_type='grant',
@@ -544,7 +540,6 @@ class TestPaidLeaveGrantProcessor(TestCase):
         # 2回目の付与記録を作成
         PaidLeaveRecord.objects.create(
             user=user,
-            grant_count=2,
             grant_date=date(2020, 7, 1),
             days=11,
             record_type='grant',
@@ -594,7 +589,6 @@ class TestPaidLeaveGrantProcessor(TestCase):
         # 既存の付与記録を作成（まだ有効期限内）
         PaidLeaveRecord.objects.create(
             user=user,
-            grant_count=1,
             grant_date=date(2022, 7, 1),
             days=10,
             record_type='grant',
@@ -631,7 +625,6 @@ class TestPaidLeaveGrantProcessor(TestCase):
         # 既存の付与記録を作成
         PaidLeaveRecord.objects.create(
             user=user,
-            grant_count=1,
             grant_date=date(2020, 7, 1),
             days=10,
             record_type='grant',
@@ -682,7 +675,6 @@ class TestPaidLeaveGrantProcessor(TestCase):
         # 既存の付与記録を作成
         PaidLeaveRecord.objects.create(
             user=user,
-            grant_count=1,
             grant_date=date(2020, 7, 1),
             days=10,
             record_type='grant',
@@ -728,7 +720,6 @@ class TestPaidLeaveGrantProcessor(TestCase):
         # 1回目の付与記録を作成
         PaidLeaveRecord.objects.create(
             user=user,
-            grant_count=1,
             grant_date=date(2020, 7, 1),
             days=10,
             record_type='grant',
@@ -746,7 +737,6 @@ class TestPaidLeaveGrantProcessor(TestCase):
         # 2回目の付与記録を作成
         PaidLeaveRecord.objects.create(
             user=user,
-            grant_count=2,
             grant_date=date(2021, 7, 1),
             days=11,
             record_type='grant',

@@ -35,9 +35,8 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         """
         実行内容:
-            1. 本日の日付で全ユーザーの付与処理を実行
-            2. 時効消滅処理も同時実行
-            3. 処理結果をログ出力
+            1. 本日の日付で全ユーザーの付与処理（同時に時効消滅処理）を実行
+            2. 処理結果をログ出力
         """
         # 処理対象日の決定
         if options['date']:
@@ -79,7 +78,11 @@ class Command(BaseCommand):
         from django.contrib.auth import get_user_model
         
         User = get_user_model()
-        users = User.objects.filter(is_active=True)
+        users = User.objects.filter(
+            is_active=True,
+            hire_date__isnull=False
+        ).exclude(paid_leave_grant_schedule=[])
+        
         target_users = []
         
         for user in users:
@@ -95,9 +98,12 @@ class Command(BaseCommand):
     
     def _execute_processing(self, auto_processor, target_date):
         """実際の処理を実行"""
-        # 1. 有給付与処理
-        self.stdout.write('有給付与処理を実行中...')
-        judgments = auto_processor.process_daily_grants(target_date)
+        # 有給付与・時効処理
+        self.stdout.write('有給付与・時効処理を実行中...')
+        judgments = auto_processor.process_daily_grants_and_expirations(target_date)
+        
+        # 時効処理の結果をログから集計（処理済みのメッセージをパース）
+        self._log_expiration_results(target_date)
         
         if judgments:
             self.stdout.write(f'付与処理完了: {len(judgments)}件の判定を実行')
@@ -112,7 +118,7 @@ class Command(BaseCommand):
             # 付与された詳細情報
             for judgment in judgments:
                 if judgment.is_eligible and judgment.grant_days > 0:
-                    user_info = f'ユーザーID不明'  # 実際の実装ではjudgmentにuser情報を含める
+                    user_info = f'{judgment.user.name} (Email: {judgment.user.email})'
                     self.stdout.write(
                         f'  ✓ {user_info}: {judgment.grant_days}日付与 '
                         f'(出勤率: {judgment.attendance_rate:.1%})'
@@ -123,46 +129,38 @@ class Command(BaseCommand):
             self.stdout.write('付与対象ユーザーはいませんでした')
             logger.info('有給付与処理完了: 対象者なし')
         
-        # 2. 時効消滅処理
-        self.stdout.write('時効消滅処理を実行中...')
-        expired_count = self._process_expiration(target_date)
-        
-        if expired_count > 0:
-            self.stdout.write(f'時効消滅処理完了: {expired_count}名のユーザーで時効処理を実行')
-            logger.info(f'時効消滅処理完了: {expired_count}名')
-        else:
-            self.stdout.write('時効消滅対象はありませんでした')
-            logger.info('時効消滅処理完了: 対象なし')
-        
-        self.stdout.write(self.style.SUCCESS('日次有給付与処理が正常に完了しました'))
-        logger.info('日次有給付与処理完了')
+        self.stdout.write(self.style.SUCCESS('日次有給付与・時効処理が正常に完了しました'))
+        logger.info('日次有給付与・時効処理完了')
     
-    def _process_expiration(self, target_date):
-        """時効消滅処理"""
-        from django.contrib.auth import get_user_model
-        from timeclock.services.paid_leave_grant_processor import PaidLeaveGrantProcessor
+    def _log_expiration_results(self, target_date):
+        """時効処理の結果をログ出力"""
+        from timeclock.models import PaidLeaveRecord
         
-        User = get_user_model()
-        users = User.objects.filter(is_active=True)
-        processed_count = 0
+        # 本日作成された時効記録を取得
+        expired_records = PaidLeaveRecord.objects.filter(
+            record_type='expire',
+            used_date=target_date  # 時効消滅記録の used_date は処理日
+        )
         
-        for user in users:
-            try:
-                processor = PaidLeaveGrantProcessor(user)
-                expired_records = processor.process_expiration(target_date)
-                
-                if expired_records:
-                    processed_count += 1
-                    total_expired_days = sum(record.days for record in expired_records)
-                    self.stdout.write(
-                        f'  時効消滅: {user.name} - {total_expired_days}日'
-                    )
+        if expired_records:
+            total_expired_days = sum(record.days for record in expired_records)
+            affected_users = expired_records.values_list('user__name', flat=True).distinct()
             
-            except Exception as e:
+            self.stdout.write(f'時効処理完了: {len(affected_users)}名のユーザーで{total_expired_days}日が時効消滅')
+            
+            # ユーザー別の時効詳細
+            for user_name in affected_users:
+                user_expired_records = expired_records.filter(user__name=user_name)
+                user_expired_days = sum(record.days for record in user_expired_records)
+                grant_dates = [record.grant_date.strftime('%Y-%m-%d') for record in user_expired_records]
+                
                 self.stdout.write(
-                    self.style.WARNING(f'ユーザー {user.name} の時効処理でエラー: {e}')
+                    f'  ⏰ {user_name}: {user_expired_days}日時効消滅 '
+                    f'(付与日: {", ".join(grant_dates)})'
                 )
-                logger.warning(f'時効処理エラー (ユーザーID: {user.id}): {e}')
-                continue
-        
-        return processed_count
+            
+            logger.info(f'時効処理完了: 対象{len(affected_users)}名, 消滅{total_expired_days}日')
+        else:
+            self.stdout.write('時効対象の有給はありませんでした')
+            logger.info('時効処理完了: 対象なし')
+    

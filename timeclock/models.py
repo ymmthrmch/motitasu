@@ -138,8 +138,6 @@ class PaidLeaveRecord(models.Model):
     RECORD_TYPE_CHOICES = [
         ('grant', '付与'),
         ('use', '使用'),
-        ('expire', '時効消滅'),
-        ('cancel', '付与取消'),
     ]
     
     user = models.ForeignKey(
@@ -170,11 +168,10 @@ class PaidLeaveRecord(models.Model):
         blank=True,
         help_text='有給休暇を使用した日（付与・取消・時効消滅時はNull）'
     )
-    cancellation_date = models.DateField(
-        verbose_name='取消日',
-        null=True,
-        blank=True,
-        help_text='付与取消が行われた日（付与・使用・時効消滅時はNull）'
+    expired = models.BooleanField(
+        verbose_name='時効フラグ',
+        default=False,
+        help_text='この記録が時効により無効化されている場合True'
     )
     description = models.CharField(
         max_length=255,

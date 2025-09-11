@@ -178,7 +178,8 @@
 
 **検証値と期待結果**:
 - PaidLeaveRecordの作成（grant_date=2023年7月1日、cancellation_date=2023年8月1日、days=5、record_type='cancel'）
-- 戻り値: (5, 5) - (実際の取消日数, 取消後の残日数)
+- 戻り値: List[PaidLeaveRecord]（作成された取消記録のリスト）
+- user.current_paid_leave: 5日（更新確認）
 
 #### テストケース4-2: 残日数を超える取消要求時の計算
 **目的**: 取消要求が残日数を超える場合の処理を検証
@@ -191,7 +192,8 @@
 
 **検証値と期待結果**:
 - PaidLeaveRecordの作成（grant_date=2023年7月1日、cancellation_date=2023年8月1日、days=10、record_type='cancel'）
-- 戻り値: (10, 0) - (実際の取消日数, 取消後の残日数)
+- 戻り値: List[PaidLeaveRecord]（作成された取消記録のリスト）
+- user.current_paid_leave: 0日（更新確認）
 
 #### テストケース4-3: 残日数がちょうど0になる場合
 **目的**: 取消により残日数がちょうど0になる場合の計算を検証
@@ -204,7 +206,8 @@
 
 **検証値と期待結果**:
 - PaidLeaveRecordの作成（grant_date=2023年7月1日、cancellation_date=2023年8月1日、days=8、record_type='cancel'）
-- 戻り値: (8, 0) - (実際の取消日数, 取消後の残日数)
+- 戻り値: List[PaidLeaveRecord]（作成された取消記録のリスト）
+- user.current_paid_leave: 0日（更新確認）
 
 #### テストケース4-5: 取消要求が0日の場合
 **目的**: 取消要求が0日の場合の処理を検証
@@ -216,7 +219,9 @@
 - target_date: 2023年7月1日
 
 **検証値と期待結果**:
-- 戻り値: (0, 10) - (実際の取消日数, 取消後の残日数)
+- PaidLeaveRecordは作成されない
+- 戻り値: []（空のリスト）
+- user.current_paid_leave: 10日（変更なし）
 
 ## テスト実行時の注意事項
 

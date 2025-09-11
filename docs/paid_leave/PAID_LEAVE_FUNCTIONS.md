@@ -182,13 +182,12 @@ def determine_grant_days(self, grant_count: int, weekly_work_days: int) -> int:
 ```
 
 ```python
-def judge_grant_eligibility(self, grant_count: int, judgment_date: date) -> 'PaidLeaveJudgment':
+def judge_grant_eligibility(self, grant_count: int) -> 'PaidLeaveJudgment':
     """
     付与可否を総合判定
     
     Args:
         grant_count: 付与回数
-        judgment_date: 判定日
         
     Returns:
         PaidLeaveJudgment: 判定結果
@@ -196,6 +195,7 @@ def judge_grant_eligibility(self, grant_count: int, judgment_date: date) -> 'Pai
     Rules:
         - 在籍状況チェック
         - 出勤率80%以上チェック
+        - 判定日は判定期間の翌日として自動計算
         - その他必要条件のチェック
     """
 ```
@@ -221,7 +221,7 @@ def should_rejudge(self, modified_record_date: date, modification_date: date) ->
 ```
 
 ```python
-def find_affected_grants(self, modified_record_date: date) -> list[int]:
+def find_affected_grants(self, modified_record_date: date) -> Optional[int]:
     """
     修正により影響を受ける付与回を特定
     
@@ -229,10 +229,11 @@ def find_affected_grants(self, modified_record_date: date) -> list[int]:
         modified_record_date: 修正された記録の日付
         
     Returns:
-        list[int]: 影響を受ける付与回のリスト
+        Optional[int]: 影響を受ける付与回（影響がない場合はNone）
         
     Rules:
         - 修正された記録の日付が判定対象期間に含まれる付与回を特定
+        - 複数の期間に該当する場合は最も直近の付与回を返す
     """
 ```
 
@@ -363,39 +364,21 @@ def execute_grant(self, judgment: 'PaidLeaveJudgment') -> 'PaidLeaveRecord':
 ```
 
 ```python
-def execute_cancellation(self, grant_count: int, cancellation_date: date, reason: str) -> 'CancellationResult':
+def execute_cancellation(self, target_date: date, cancellation_days: int) -> List[PaidLeaveRecord]:
     """
     付与取消処理を実行（部分取消対応）
     
     Args:
-        grant_count: 取消対象の付与回数
-        cancellation_date: 取消日
-        reason: 取消理由
+        target_date: 取消対象の付与日
+        cancellation_days: 取消日数
         
     Returns:
-        CancellationResult: 取消処理結果
+        List[PaidLeaveRecord]: 編集された付与記録のリスト
         
     Rules:
-        - 指定回の付与を部分取消で処理
+        - 指定付与日の付与記録の付与日数を削減することで取消
         - 残日数がマイナスにならない範囲でのみ取消
-        - 取消記録をPaidLeaveRecordに作成
-    """
-```
-
-```python
-def process_expiration(self, target_date: date) -> list['PaidLeaveRecord']:
-    """
-    時効消滅処理を実行
-    
-    Args:
-        target_date: 処理対象日
-        
-    Returns:
-        list[PaidLeaveRecord]: 消滅させた有給記録のリスト
-        
-    Rules:
-        - target_date時点で期限切れの未使用有給を消滅
-        - 時効記録をPaidLeaveRecordに作成
+        - 複数の付与記録がある場合は古い順に取消処理
     """
 ```
 
@@ -411,9 +394,9 @@ def __init__(self):
 ```
 
 ```python
-def process_daily_grants(self, target_date: date) -> list['PaidLeaveJudgment']:
+def process_daily_grants_and_expirations(self, target_date: date) -> list['PaidLeaveJudgment']:
     """
-    指定日の全ユーザー付与処理
+    指定日の全ユーザー付与処理と時効処理
     
     Args:
         target_date: 処理対象日
@@ -424,6 +407,7 @@ def process_daily_grants(self, target_date: date) -> list['PaidLeaveJudgment']:
     Rules:
         - 全ユーザーのpaid_leave_grant_scheduleフィールドを参照
         - target_dateが付与日に含まれるユーザーのみを対象に付与処理を実行
+        - 同時に時効消滅処理も実行
         - cron処理から呼び出される
     """
 ```
@@ -466,6 +450,43 @@ def process_paid_leave_record_change(self, user, record: 'PaidLeaveRecord', chan
     """
 ```
 
+```python
+def _execute_rejudgment(self, user, modified_record_date: date) -> List['PaidLeaveJudgment']:
+    """
+    再判定処理を実行（内部メソッド）
+    
+    Args:
+        user: 対象ユーザー
+        modified_record_date: 修正されたレコードの日付
+        
+    Returns:
+        List[PaidLeaveJudgment]: 再判定結果のリスト
+        
+    Rules:
+        - 影響を受ける付与回を特定し、該当する付与を取消・再付与
+        - トランザクション管理で整合性を保証
+        - 内部メソッドとしてprocess_time_record_changeから呼び出される
+    """
+```
+
+```python
+def _calculate_grant_count_for_date(self, user, target_date: date) -> Optional[int]:
+    """
+    指定日に対応する付与回数を計算（内部メソッド）
+    
+    Args:
+        user: 対象ユーザー
+        target_date: 処理対象日
+        
+    Returns:
+        Optional[int]: 付与回数（該当しない場合はNone）
+        
+    Rules:
+        - 各付与回の付与日を計算し、target_dateと照合
+        - 最大20回まで確認
+    """
+```
+
 ---
 
 ## データクラス設計
@@ -476,6 +497,7 @@ def process_paid_leave_record_change(self, user, record: 'PaidLeaveRecord', chan
 @dataclass
 class PaidLeaveJudgment:
     """有給付与判定結果"""
+    user: User                    # ユーザー
     grant_count: int              # 付与回数
     judgment_date: date           # 判定日
     period_start: date            # 判定期間開始日
@@ -486,7 +508,7 @@ class PaidLeaveJudgment:
     is_eligible: bool             # 付与可否
     grant_days: int               # 付与日数
     expiry_date: date            # 有効期限
-    reason: str                   # 判定理由
+    description: str              # 判定理由
 ```
 
 ### NextGrantInfo データクラス
@@ -529,16 +551,14 @@ class GrantDateBalance:
 
 ```python
 @dataclass
-class CancellationResult:
-    """取消処理結果"""
-    grant_count: int            # 取消対象の付与回数
-    target_cancel_days: int     # 当初の取消予定日数
-    actual_cancelled_days: int  # 実際に取り消された日数
-    remaining_balance: int      # 取消後の残日数
-    was_partial: bool          # 部分取消だったか
-    cancellation_date: date    # 取消日
-    reason: str                # 取消理由
+class ExpirationInfo:
+    """時効情報"""
+    grant_date: date           # 付与日
+    expiry_date: date         # 時効日
+    remaining_days: int       # 時効対象の残日数
+    days_until_expiry: int    # 時効まで日数
 ```
+
 
 ---
 
@@ -646,29 +666,432 @@ def handle_paid_leave_record_change(sender, instance, **kwargs):
 
 ---
 
+## 処理フローの詳細
+
+このセクションでは、有給休暇システムが実際にどのように動作するかを、5つの主要なシナリオに分けて説明します。各フローは図解付きで示されており、システムの動作を理解しやすくしています。
+
+### 🎯 フロー概要
+
+#### 📅 1. 日次付与処理（毎日自動実行）
+**何が起こる？**: 毎日夜中に、「今日が有給付与日のユーザー」がいないか自動チェックし、条件を満たすユーザーに有給を付与
+
+**実生活の例**: 
+- 田中さんが1月1日に入社
+- 6ヶ月後の7月1日が初回付与日
+- 7月1日の夜中0:00に自動で「田中さんの出勤率は80%以上？」をチェック
+- 条件を満たしていれば10日の有給を自動付与
+
+#### 🔄 2. 打刻修正時の再判定（リアルタイム）
+**何が起こる？**: 過去の打刻記録を修正した瞬間、その変更が有給付与に影響するかを自動判定し、必要に応じて有給を追加付与または取消
+
+**実生活の例**:
+- 田中さんが7月に「出勤率不足で有給付与なし」と判定済み
+- 8月に6月の打刻漏れを発見・追加入力
+- システムが自動で「あ、これで出勤率80%超えた！」と判定
+- 遡って7月1日付けで10日の有給を自動付与
+
+#### 💼 3. 有給使用・管理（手動操作時）
+**何が起こる？**: 管理者が有給の使用・付与・取消を手動で行った瞬間、自動でユーザーの残日数を再計算・更新
+
+**実生活の例**:
+- 田中さんが「8月15日に有給3日使用」を申請
+- 管理者がシステムに「使用記録」を入力
+- システムが自動で田中さんの残日数を「10日→7日」に更新
+
+#### 👤 4. 新規ユーザー登録（初期設定）
+**何が起こる？**: 新しいユーザーを登録し、入社日を設定した瞬間、今後20回分の有給付与予定日を自動計算・保存
+
+**実生活の例**:
+- 佐藤さんが2024年4月1日入社予定でユーザー登録
+- システムが自動で計算：「1回目：2024年10月1日、2回目：2025年10月1日...」
+- 今後の付与スケジュールが完成
+
+#### 🧪 5. テスト実行時（開発者向け）
+**何が起こる？**: テスト実行時は上記の自動処理をすべて停止し、テスト用の偽データで動作確認
+
+**開発時の例**:
+- 「シグナル無効化フラグ」をONにしてテスト実行
+- 打刻データを作成しても自動処理は動かない
+- テスト用の期待値で正常性を確認
+
+---
+
+### 1. 日次付与処理フロー（Cronジョブ実行）
+
+**🕛 実行タイミング**: 毎日深夜0:00（Cronジョブ）
+**🎯 目的**: その日が付与日のユーザーに有給休暇を自動付与
+**⏱️ 処理時間**: 100名で約30秒〜1分
+
+**処理の流れ**:
+1. **対象者検索**: 全ユーザーの付与スケジュールをチェック
+2. **付与判定**: 出勤率80%以上かを厳密に計算
+3. **有給付与**: 条件を満たすユーザーに規定日数を付与
+4. **時効処理**: 同時に2年前の有給の時効消滅もチェック
+5. **残日数更新**: ユーザーの画面表示用残日数を最新化
+
+```mermaid
+sequenceDiagram
+    participant Cron
+    participant Command as ManagementCommand
+    participant AutoProcessor as PaidLeaveAutoProcessor
+    participant Calculator as PaidLeaveCalculator
+    participant GrantProcessor as PaidLeaveGrantProcessor
+    participant BalanceManager as PaidLeaveBalanceManager
+    participant DB as Database
+    
+    Cron->>Command: 毎日0:00に実行
+    Command->>AutoProcessor: process_daily_grants_and_expirations(target_date)
+    
+    loop 全アクティブユーザー
+        AutoProcessor->>DB: ユーザーのpaid_leave_grant_schedule取得
+        AutoProcessor->>AutoProcessor: is_grant_date_today()確認
+        
+        alt 付与日の場合
+            AutoProcessor->>Calculator: judge_grant_eligibility(grant_count, date)
+            Calculator->>DB: TimeRecord/PaidLeaveRecord集計
+            Calculator-->>AutoProcessor: PaidLeaveJudgment返却
+            
+            alt 付与条件を満たす場合
+                AutoProcessor->>GrantProcessor: execute_grant(judgment)
+                GrantProcessor->>DB: PaidLeaveRecord(grant)作成
+                GrantProcessor->>BalanceManager: update_user_balance()
+                BalanceManager->>DB: User.current_paid_leave更新
+            end
+            
+            AutoProcessor->>GrantProcessor: process_expiration(target_date)
+            GrantProcessor->>DB: 時効対象の有給を確認
+            alt 時効対象あり
+                GrantProcessor->>DB: PaidLeaveRecord(expire)作成
+                GrantProcessor->>BalanceManager: update_user_balance()
+            end
+        end
+    end
+    
+    AutoProcessor-->>Command: 処理結果リスト返却
+    Command->>Command: ログ出力
+```
+
+### 2. TimeRecord変更時のシグナル処理フロー
+
+**⚡ 実行タイミング**: 打刻記録の作成・更新・削除の瞬間（リアルタイム）
+**🎯 目的**: 過去の打刻修正が有給付与に影響する場合の自動再判定
+**⏱️ 処理時間**: 通常1秒以内
+
+**具体的なケース**:
+- **打刻追加**: 忘れていた出勤日を後から追加 → 出勤率向上 → 有給追加付与の可能性
+- **打刻削除**: 間違った打刻を削除 → 出勤率低下 → 有給取消の可能性
+- **打刻修正**: 時刻の修正（有給付与への影響は通常なし）
+
+**処理の流れ**:
+1. **変更検知**: システムが打刻の変更を自動検知
+2. **影響範囲特定**: 「この変更はいつの有給付与に影響する？」を判定
+3. **再計算実行**: 影響のある期間の出勤率を再計算
+4. **結果適用**: 追加付与または部分取消を自動実行
+5. **残日数更新**: 最新の残日数に更新
+
+```mermaid
+sequenceDiagram
+    participant User as ユーザー操作
+    participant TimeRecord
+    participant Signal as Django Signal
+    participant AutoProcessor as PaidLeaveAutoProcessor
+    participant Calculator as PaidLeaveCalculator
+    participant GrantProcessor as PaidLeaveGrantProcessor
+    participant DB as Database
+    
+    User->>TimeRecord: create/update/delete
+    TimeRecord->>Signal: post_save/post_delete発火
+    Signal->>Signal: PAID_LEAVE_SIGNALS_ENABLED確認
+    
+    alt シグナルが有効
+        Signal->>AutoProcessor: process_time_record_change(user, date, type)
+        AutoProcessor->>DB: User.get_latest_grant_date()
+        
+        alt 再判定が必要（変更日 < 直近付与日）
+            AutoProcessor->>Calculator: should_rejudge()確認
+            Calculator-->>AutoProcessor: True
+            
+            AutoProcessor->>Calculator: find_affected_grants()
+            Calculator-->>AutoProcessor: 影響を受ける付与回（1つまたはNone）
+            
+            alt 影響を受ける付与回がある場合
+                AutoProcessor->>Calculator: judge_grant_eligibility()
+                Calculator->>DB: 新しい出勤率を計算
+                Calculator-->>AutoProcessor: PaidLeaveJudgment
+                
+                AutoProcessor->>GrantProcessor: execute_cancellation()
+                GrantProcessor->>DB: 既存付与を部分取消
+                
+                alt 新たに付与条件を満たす
+                    AutoProcessor->>GrantProcessor: execute_grant()
+                    GrantProcessor->>DB: PaidLeaveRecord(grant)作成
+                end
+            end
+        end
+    end
+```
+
+### 3. PaidLeaveRecord変更時のシグナル処理フロー
+
+**⚡ 実行タイミング**: 有給の使用・付与・取消記録の作成・更新・削除の瞬間（リアルタイム）
+**🎯 目的**: 有給関連の記録変更時に自動で残日数を再計算・更新
+**⏱️ 処理時間**: 通常0.5秒以内
+
+**具体的なケース**:
+- **有給使用記録**: 「8月15日に3日使用」→ 残日数を3日減算
+- **有給付与記録**: 「追加で5日付与」→ 残日数を5日加算
+- **有給取消記録**: 「過去の付与10日を取消」→ 残日数を10日減算（ただし、マイナスにはならない）
+- **使用記録削除**: 「間違った使用記録を削除」→ 使用分を復活させて残日数増加
+
+**処理の流れ**:
+1. **記録変更検知**: システムが有給記録の変更を自動検知
+2. **残日数再計算**: 全ての有給記録を集計し直し（付与-使用-時効-取消）
+3. **ユーザー情報更新**: ユーザー画面に表示される残日数を最新値に更新
+4. **整合性確保**: 残日数がマイナスにならないよう自動調整
+
+```mermaid
+sequenceDiagram
+    participant Admin as 管理者操作
+    participant PLRecord as PaidLeaveRecord
+    participant Signal as Django Signal
+    participant AutoProcessor as PaidLeaveAutoProcessor
+    participant BalanceManager as PaidLeaveBalanceManager
+    participant DB as Database
+    
+    Admin->>PLRecord: 有給使用/付与/取消の記録
+    PLRecord->>Signal: post_save/post_delete発火
+    Signal->>Signal: PAID_LEAVE_SIGNALS_ENABLED確認
+    
+    alt シグナルが有効
+        Signal->>AutoProcessor: process_paid_leave_record_change(user, record, type)
+        AutoProcessor->>BalanceManager: update_user_balance()
+        
+        BalanceManager->>DB: 全PaidLeaveRecord集計
+        Note over BalanceManager: 付与 - 使用 - 時効 - 取消 = 残日数
+        
+        BalanceManager->>DB: User.current_paid_leave更新
+        BalanceManager-->>AutoProcessor: 新残日数返却
+    end
+```
+
+### 4. ユーザー作成/更新時の自動処理フロー
+
+**⚡ 実行タイミング**: 新規ユーザー登録時、既存ユーザーの入社日変更時（手動操作）
+**🎯 目的**: 入社日に基づいて今後の有給付与スケジュールを事前計算・保存
+**⏱️ 処理時間**: 通常0.1秒以内（20回分の付与日計算）
+
+**具体的なケース**:
+- **新規ユーザー登録**: 「佐藤さん 2024年4月1日入社」→ 1回目付与日：2024年10月1日、2回目：2025年10月1日...と20回分自動計算
+- **入社日変更**: 「田中さんの入社日を1月1日→4月1日に変更」→ 全付与日を再計算し直し
+- **付与スケジュール確認**: 管理者が「この人の次回付与日はいつ？」をすぐに確認可能
+
+**処理の流れ**:
+1. **入社日変更検知**: ユーザー保存時にhire_dateの変更を自動検知
+2. **付与日計算**: 1回目（入社日+6ヶ月）、2回目以降（前回+1年）で20回分計算
+3. **スケジュール保存**: 計算結果をpaid_leave_grant_scheduleフィールドに保存
+4. **即座に利用可能**: 日次処理やシグナル処理で付与日判定に使用
+
+```mermaid
+sequenceDiagram
+    participant Admin as 管理者
+    participant User as Userモデル
+    participant Calculator as PaidLeaveCalculator
+    participant DB as Database
+    
+    Admin->>User: create/update (hire_date設定)
+    User->>User: save()メソッド実行
+    
+    alt hire_dateが変更された場合
+        User->>Calculator: _calculate_grant_schedule()
+        
+        loop 1回目〜20回目
+            Calculator->>Calculator: calculate_grant_date(grant_count)
+            Note over Calculator: 1回目: hire_date + 6ヶ月<br/>2回目以降: 1回目 + n年
+        end
+        
+        Calculator-->>User: 付与日リスト返却
+        User->>DB: paid_leave_grant_schedule保存
+    end
+```
+
+### 5. 統合テスト実行時の処理フロー
+
+**⚡ 実行タイミング**: テストコード実行時（開発者・CI/CD実行）
+**🎯 目的**: 本番環境の自動処理を無効化し、テスト用の制御されたデータで動作確認
+**⏱️ 処理時間**: テストケースにより異なる（通常1〜10秒程度）
+
+**具体的なケース**:
+- **Unit Test**: 「PaidLeaveCalculatorが正しく計算するか？」→ シグナル無効化して純粋な計算ロジックのみテスト
+- **Integration Test**: 「実際のフローが動くか？」→ モック使用で期待値をコントロール
+- **Signal Test**: 「シグナルが正しく発火するか？」→ 部分的にシグナルを有効化してテスト
+
+**処理の流れ**:
+1. **テスト環境準備**: シグナル無効化、モック設定
+2. **テストデータ作成**: 実際のデータベース操作（ただし自動処理は動かない）
+3. **期待値制御**: モック使用で予想される結果を設定
+4. **動作確認**: アサーションで期待値と実際の結果を比較
+
+**重要な制御ポイント**:
+- **PAID_LEAVE_SIGNALS_ENABLED = False**: 全シグナル処理を無効化
+- **function._disabled = True**: 特定シグナル関数のみ無効化
+- **@patch**: 外部処理をモック化して期待値を制御
+
+```mermaid
+sequenceDiagram
+    participant Test as テストコード
+    participant Settings
+    participant TimeRecord
+    participant Signal
+    participant Mock
+    
+    Test->>Settings: PAID_LEAVE_SIGNALS_ENABLED = False
+    Test->>Mock: AutoProcessor等をモック化
+    
+    Test->>TimeRecord: テストデータ作成
+    TimeRecord->>Signal: post_save発火
+    Signal->>Signal: シグナル無効化確認
+    Note over Signal: 処理スキップ
+    
+    Test->>Mock: モック関数を直接呼び出し
+    Mock-->>Test: 期待値を返却
+    Test->>Test: アサーション実行
+```
+
+### 処理フローの重要ポイント
+
+#### シグナルの連鎖防止
+- TimeRecord変更 → 再判定 → PaidLeaveRecord作成 → 残日数更新
+- 各段階でエラーハンドリングを実施し、無限ループを防止
+
+#### トランザクション管理
+- 付与処理、取消処理は`@transaction.atomic`で保護
+- エラー時は自動ロールバック
+
+#### パフォーマンス最適化
+- 日次処理は付与日のユーザーのみを対象
+- 再判定は影響範囲のみに限定
+- バルク処理での効率化
+
+---
+
 ## Management Command設計
 
 ### 日次付与処理コマンド
 
+#### コマンド概要
+```bash
+# 基本実行（本日の日付で処理）
+python manage.py process_daily_paid_leave_grants
+
+# 指定日での実行
+python manage.py process_daily_paid_leave_grants --date 2023-07-01
+
+# DRY-RUN（実際の処理なしで対象者確認のみ）
+python manage.py process_daily_paid_leave_grants --date 2023-07-01 --dry-run
+```
+
+#### クラス設計
 ```python
 class Command(BaseCommand):
     """日次有給付与処理コマンド（cron実行用）"""
     
+    help = '指定日の有給休暇付与処理を実行します'
+    
     def add_arguments(self, parser):
         """コマンド引数の定義"""
+        parser.add_argument(
+            '--date',
+            type=str,
+            help='処理対象日 (YYYY-MM-DD形式、未指定の場合は今日)',
+            default=None
+        )
+        parser.add_argument(
+            '--dry-run',
+            action='store_true',
+            help='実際の処理は実行せず、対象者のみを表示',
+            default=False
+        )
         
     def handle(self, *args, **options):
         """
         実行内容:
-            1. 本日の日付で全ユーザーの付与処理を実行
-            2. 時効消滅処理も同時実行
-            3. 処理結果をログ出力
+            1. 引数解析と対象日決定
+            2. DRY-RUNモードまたは実際の処理を実行
+            3. 詳細な処理結果をログ出力
         """
+        
+    def _dry_run_check(self, auto_processor, target_date):
+        """
+        DRY-RUN: 処理対象者をチェック
+        
+        処理内容:
+            - アクティブユーザーの付与スケジュールを確認
+            - 指定日が付与日のユーザーをリスト表示
+            - 実際の処理は実行しない
+        """
+        
+    def _execute_processing(self, auto_processor, target_date):
+        """
+        実際の処理を実行
+        
+        処理内容:
+            1. process_daily_grants_and_expirationsを実行
+            2. 付与処理結果の詳細表示（成功/失敗件数、対象者詳細）
+            3. 時効処理結果の詳細表示（時効ユーザー、消滅日数）
+            4. ログ出力とコンソール出力
+        """
+        
+    def _log_expiration_results(self, target_date):
+        """
+        時効処理の結果をログ出力
+        
+        処理内容:
+            - 指定日に作成された時効記録を集計
+            - ユーザー別の時効消滅詳細を表示
+            - 総計情報の出力
+        """
+```
+
+#### 出力例
+```bash
+# 通常実行の出力例
+$ python manage.py process_daily_paid_leave_grants --date 2023-07-01
+
+日次有給付与処理を開始します (対象日: 2023-07-01)
+有給付与・時効処理を実行中...
+時効処理完了: 2名のユーザーで8日が時効消滅
+  ⏰ 田中太郎: 5日時効消滅 (付与日: 2021-07-01)
+  ⏰ 佐藤花子: 3日時効消滅 (付与日: 2021-07-01)
+付与処理完了: 3件の判定を実行
+  付与成功: 2件
+  付与失敗: 1件
+  ✓ 山田一郎 (Email: yamada@company.com): 10日付与 (出勤率: 85.3%)
+  ✓ 鈴木二郎 (Email: suzuki@company.com): 11日付与 (出勤率: 92.1%)
+日次有給付与・時効処理が正常に完了しました
+
+# DRY-RUN実行の出力例
+$ python manage.py process_daily_paid_leave_grants --date 2023-07-01 --dry-run
+
+日次有給付与処理を開始します (対象日: 2023-07-01)
+DRY-RUN モード: 実際の処理は実行されません
+付与処理対象ユーザー数: 3
+  - 山田一郎 (ID: 1, 入社日: 2023-01-01)
+  - 鈴木二郎 (ID: 2, 入社日: 2022-01-01)
+  - 田中三郎 (ID: 3, 入社日: 2021-01-01)
 ```
 
 ---
 
 ## テストサポート設計
+
+### シグナル制御フラグ
+
+```python
+# settings.py または環境変数
+PAID_LEAVE_SIGNALS_ENABLED = True  # デフォルトは有効
+```
+
+### シグナル無効化機能
 
 ```python
 class SignalDisabler:
@@ -680,6 +1103,38 @@ class SignalDisabler:
             # この中ではシグナルが動作しない
             TimeRecord.objects.create(...)
     """
+    
+    def __enter__(self):
+        """シグナルを無効化"""
+        from django.conf import settings
+        self.original_state = getattr(settings, 'PAID_LEAVE_SIGNALS_ENABLED', True)
+        settings.PAID_LEAVE_SIGNALS_ENABLED = False
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """シグナル状態を復元"""
+        from django.conf import settings
+        settings.PAID_LEAVE_SIGNALS_ENABLED = self.original_state
+```
+
+### シグナル関数内でのフラグチェック
+
+```python
+@receiver(post_save, sender=TimeRecord)
+@receiver(post_delete, sender=TimeRecord)
+def handle_time_record_change(sender, instance, **kwargs):
+    """
+    TimeRecord変更時の自動再判定
+    
+    処理内容:
+        1. シグナル無効化フラグをチェック
+        2. 変更されたレコードの日付と対象ユーザーを特定
+        3. PaidLeaveAutoProcessorを使用して再判定処理を実行
+    """
+    from django.conf import settings
+    if not getattr(settings, 'PAID_LEAVE_SIGNALS_ENABLED', True):
+        return
+    
+    # 実際の処理を実行...
 ```
 
 ---
