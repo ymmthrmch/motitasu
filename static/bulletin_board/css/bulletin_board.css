@@ -27,6 +27,15 @@
     text-decoration: underline;
 }
 
+/* 長押し時の視覚的フィードバック */
+.reaction-count.pressing {
+    background-color: rgba(0, 123, 255, 0.2);
+    border-radius: 4px;
+    padding: 0 4px;
+    transform: scale(0.95);
+    transition: all 0.1s ease;
+}
+
 .message-card {
     transition: box-shadow 0.2s ease;
 }

@@ -1,22 +1,31 @@
 // 伝言板JavaScript機能
-
 document.addEventListener('DOMContentLoaded', function() {
     initializeReactionButtons();
     initializePinButtons();
-    initializeReactionUsersList();
     initializeMessageForm();
 });
 
 // リアクションボタンの初期化
 function initializeReactionButtons() {
     document.querySelectorAll('.reaction-btn').forEach(button => {
-        button.addEventListener('click', function() {
+        // ツールチップを設定
+        button.setAttribute('title', 'クリック：リアクション切り替え、長押し：ユーザー一覧表示');
+        
+        // クリックイベント（リアクション切り替え）
+        button.addEventListener('click', function(e) {
+            // 長押し後のクリックイベントは無視
+            if (this.wasLongPressed) {
+                this.wasLongPressed = false;
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
+            
             if (this.disabled) return;
             
             const messageId = this.closest('.reaction-area').dataset.messageId;
             const reactionType = this.dataset.reactionType;
             
-            // ボタンをローディング状態に
             this.classList.add('loading');
             this.disabled = true;
             
@@ -33,11 +42,31 @@ function initializeReactionButtons() {
                     showError('通信エラーが発生しました');
                 })
                 .finally(() => {
-                    // ローディング状態を解除
                     this.classList.remove('loading');
                     this.disabled = false;
                 });
         });
+        
+        // 長押しイベント（ユーザー一覧表示）
+        addLongPressListener(button, function(e) {
+            // 長押しフラグを設定
+            this.wasLongPressed = true;
+            
+            const messageId = this.closest('.reaction-area').dataset.messageId;
+            const reactionType = this.dataset.reactionType;
+            
+            // リアクション数を確認
+            const countSpan = this.querySelector('.reaction-count');
+            const count = parseInt(countSpan.textContent);
+            
+            if (count === 0) {
+                showError('まだリアクションしたユーザーはいません');
+                return;
+            }
+            
+            // ユーザー一覧を表示
+            showReactionUsers(messageId, reactionType);
+        }, 500);
     });
 }
 
@@ -101,26 +130,6 @@ function initializePinButtons() {
                     this.classList.remove('loading');
                     this.disabled = false;
                 });
-        });
-    });
-}
-
-// リアクションユーザー一覧の初期化
-function initializeReactionUsersList() {
-    document.querySelectorAll('.reaction-count').forEach(countSpan => {
-        countSpan.style.cursor = 'pointer';
-        countSpan.setAttribute('title', 'クリックでユーザー一覧を表示');
-        countSpan.addEventListener('click', function(e) {
-            e.stopPropagation();
-            
-            const count = parseInt(this.textContent);
-            if (count === 0) return;
-            
-            const reactionBtn = this.closest('.reaction-btn');
-            const messageId = reactionBtn.closest('.reaction-area').dataset.messageId;
-            const reactionType = reactionBtn.dataset.reactionType;
-            
-            showReactionUsers(messageId, reactionType);
         });
     });
 }
@@ -195,8 +204,18 @@ async function togglePin(messageId, action, duration = null) {
 // リアクションボタンの表示更新
 function updateReactionButton(button, data) {
     const countSpan = button.querySelector('.reaction-count');
+    
+    // カウント数を更新
     countSpan.textContent = data.reaction_count;
     
+    // カウントが0の場合は非表示、1以上の場合は表示
+    if (data.reaction_count === 0) {
+        countSpan.style.display = 'none';
+    } else {
+        countSpan.style.display = 'inline';  // 再表示
+    }
+    
+    // ボタンのスタイル更新
     if (data.action === 'added') {
         button.classList.remove('btn-outline-secondary');
         button.classList.add('btn-secondary');
@@ -226,107 +245,25 @@ async function showReactionUsers(messageId, reactionType) {
 
 // リアクションユーザー一覧モーダルを表示
 function displayReactionUsersModal(data) {
-    const modal = document.getElementById('reactionUsersModal');
-    const modalTitle = modal.querySelector('.modal-title');
+    const modalTitle = document.getElementById('reactionUsersModalLabel');
     const usersList = document.getElementById('reactionUsersList');
     
+    // モーダルタイトルを設定
     modalTitle.textContent = `${data.emoji} リアクションしたユーザー (${data.users.length}人)`;
     
+    // ユーザーリストを生成
     if (data.users.length === 0) {
-        usersList.innerHTML = '<p class="text-muted">まだリアクションしたユーザーはいません。</p>';
+        usersList.innerHTML = '<p class="text-muted text-center">まだリアクションしたユーザーはいません。</p>';
     } else {
         usersList.innerHTML = data.users.map(user => 
-            `<div class="mb-2 d-flex justify-content-between align-items-center">
+            `<div class="d-flex justify-content-between align-items-center py-2 border-bottom">
                 <strong>${escapeHtml(user.name)}</strong>
                 <small class="text-muted">${user.created_at}</small>
             </div>`
         ).join('');
     }
     
-    // Bootstrap Modal を表示
-    const bsModal = new bootstrap.Modal(modal);
-    bsModal.show();
+    // Bootstrap Modalを表示
+    const modal = new bootstrap.Modal(document.getElementById('reactionUsersModal'));
+    modal.show();
 }
-
-// CSRFトークンを取得
-function getCsrfToken() {
-    const token = document.querySelector('[name=csrfmiddlewaretoken]');
-    return token ? token.value : '';
-}
-
-// HTMLエスケープ
-function escapeHtml(text) {
-    const map = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;'
-    };
-    return text.replace(/[&<>"']/g, m => map[m]);
-}
-
-// 成功メッセージを表示
-function showSuccess(message) {
-    showNotification(message, 'success');
-}
-
-// エラーメッセージを表示
-function showError(message) {
-    showNotification(message, 'error');
-}
-
-// 通知を表示
-function showNotification(message, type) {
-    // 既存の通知があれば削除
-    const existingNotification = document.querySelector('.notification');
-    if (existingNotification) {
-        existingNotification.remove();
-    }
-    
-    const notification = document.createElement('div');
-    notification.className = `notification alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show`;
-    notification.style.position = 'fixed';
-    notification.style.top = '20px';
-    notification.style.right = '20px';
-    notification.style.zIndex = '9999';
-    notification.style.minWidth = '300px';
-    
-    notification.innerHTML = `
-        ${escapeHtml(message)}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-    
-    document.body.appendChild(notification);
-    
-    // 5秒後に自動で削除
-    setTimeout(() => {
-        if (notification.parentNode) {
-            notification.remove();
-        }
-    }, 5000);
-}
-
-// 時間経過の表示更新（ピン留めの残り時間など）
-function updateTimeDisplays() {
-    document.querySelectorAll('[data-expires-at]').forEach(element => {
-        const expiresAt = new Date(element.dataset.expiresAt);
-        const now = new Date();
-        const remaining = expiresAt - now;
-        
-        if (remaining > 0) {
-            const hours = Math.floor(remaining / (1000 * 60 * 60));
-            const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
-            element.textContent = `${hours}時間${minutes}分後に期限切れ`;
-        } else {
-            element.textContent = '期限切れ';
-            element.classList.add('text-muted');
-        }
-    });
-}
-
-// 1分ごとに時間表示を更新
-setInterval(updateTimeDisplays, 60000);
-
-// ページ読み込み時に時間表示を更新
-updateTimeDisplays();

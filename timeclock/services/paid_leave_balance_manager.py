@@ -5,6 +5,7 @@
 from datetime import date, timedelta
 from dataclasses import dataclass
 from typing import List, Tuple
+from django.conf import settings
 from django.db.models import Sum
 from django.utils import timezone
 from zoneinfo import ZoneInfo
@@ -112,7 +113,7 @@ class PaidLeaveBalanceManager:
         
         balance_by_grant_date = []
         total_balance = 0
-        jst = ZoneInfo('Asia/Tokyo')
+        jst = ZoneInfo(settings.TIME_ZONE)
         today = timezone.now().astimezone(jst).date()
         
         # 同一grant_dateをグループ化

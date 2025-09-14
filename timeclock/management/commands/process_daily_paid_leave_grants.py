@@ -4,6 +4,7 @@
 
 from django.core.management.base import BaseCommand
 from datetime import date, datetime
+from django.conf import settings
 from django.utils import timezone
 from zoneinfo import ZoneInfo
 import logging
@@ -51,7 +52,7 @@ class Command(BaseCommand):
                 return
         else:
             # JST基準で今日の日付を取得
-            jst = ZoneInfo('Asia/Tokyo')
+            jst = ZoneInfo(settings.TIME_ZONE)
             target_date = timezone.now().astimezone(jst).date()
         
         self.stdout.write(f'日次有給付与処理を開始します (対象日: {target_date})')

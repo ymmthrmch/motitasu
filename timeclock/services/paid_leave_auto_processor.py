@@ -6,6 +6,7 @@
 
 from datetime import date
 from typing import List, Optional
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.utils import timezone
@@ -158,7 +159,7 @@ class PaidLeaveAutoProcessor:
             return []
         
         # 現在日で直近付与日を取得（JST）
-        jst = ZoneInfo('Asia/Tokyo')
+        jst = ZoneInfo(settings.TIME_ZONE)
         today = timezone.now().astimezone(jst).date()
         latest_grant_date = user.get_latest_grant_date(today)
         

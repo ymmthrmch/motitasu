@@ -5,6 +5,7 @@ from django.utils import timezone
 from django.core.exceptions import ValidationError
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
+from django.conf import settings
 from zoneinfo import ZoneInfo
 import calendar
 from datetime import datetime, date, timedelta
@@ -16,7 +17,7 @@ from .services.paid_leave_balance_manager import PaidLeaveBalanceManager
 
 @login_required
 def timeclock(request):
-    jst = ZoneInfo('Asia/Tokyo')
+    jst = ZoneInfo(settings.TIME_ZONE)
     now_jst = timezone.now().astimezone(jst)
     today_start = now_jst.replace(hour=0, minute=0, second=0, microsecond=0)
     today_end = today_start + timezone.timedelta(days=1)
@@ -87,7 +88,7 @@ def clock_action(request):
         handle_time_record_delete._disabled = True
         
         try:
-            jst = ZoneInfo('Asia/Tokyo')
+            jst = ZoneInfo(settings.TIME_ZONE)
             timestamp = timezone.now().astimezone(jst)
             
             record = TimeRecord(
@@ -111,7 +112,7 @@ def clock_action(request):
 
 @login_required
 def get_current_time(request):
-    jst = ZoneInfo('Asia/Tokyo')
+    jst = ZoneInfo(settings.TIME_ZONE)
     now_jst = timezone.now().astimezone(jst)
     return JsonResponse({
         'time': now_jst.strftime('%H:%M:%S'),
@@ -122,7 +123,7 @@ def get_current_time(request):
 @login_required
 def dashboard(request):
     """個人の勤務状況ダッシュボード"""
-    jst = ZoneInfo('Asia/Tokyo')
+    jst = ZoneInfo(settings.TIME_ZONE)
     now = timezone.now().astimezone(jst)
     
     year = int(request.GET.get('year', now.year))
@@ -207,7 +208,7 @@ def dashboard(request):
 
 def get_all_time_stats(user):
     """全期間の勤務統計を取得"""
-    jst = ZoneInfo('Asia/Tokyo')
+    jst = ZoneInfo(settings.TIME_ZONE)
     
     # 最初の打刻記録を取得
     first_record = TimeRecord.objects.filter(

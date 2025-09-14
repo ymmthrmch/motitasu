@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, date
 from typing import Dict, Optional, Any
+from django.conf import settings
 from django.utils import timezone
 from zoneinfo import ZoneInfo
 
@@ -11,7 +12,7 @@ class WorkTimeService:
     
     def __init__(self, user):
         self.user = user
-        self.jst = ZoneInfo('Asia/Tokyo')
+        self.jst = ZoneInfo(settings.TIME_ZONE)
     
     def get_daily_summary(self, target_date: Optional[date] = None) -> Dict[str, Any]:
         """

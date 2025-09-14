@@ -3,7 +3,8 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.db.models import Count
 from datetime import timedelta
-import pytz
+from zoneinfo import ZoneInfo
+from django.conf import settings
 
 User = get_user_model()
 
@@ -79,12 +80,12 @@ class Message(models.Model):
         """ピン留めが期限切れかどうかを判定"""
         if not self.is_pinned or not self.pin_expires_at:
             return False
-        jst = pytz.timezone('Asia/Tokyo')
+        jst = ZoneInfo(settings.TIME_ZONE)
         return timezone.now().astimezone(jst) > self.pin_expires_at
         
     def pin_message(self, duration_hours):
         """メッセージをピン留めする"""
-        jst = pytz.timezone('Asia/Tokyo')
+        jst = ZoneInfo(settings.TIME_ZONE)
         self.is_pinned = True
         self.pin_duration_hours = duration_hours
         self.pinned_at = timezone.now().astimezone(jst)
@@ -103,7 +104,7 @@ class Message(models.Model):
         """ピン留めの残り時間を取得（秒単位）"""
         if not self.is_pinned or not self.pin_expires_at:
             return 0
-        jst = pytz.timezone('Asia/Tokyo')
+        jst = ZoneInfo(settings.TIME_ZONE)
         remaining = self.pin_expires_at - timezone.now().astimezone(jst)
         return max(0, remaining.total_seconds())
 

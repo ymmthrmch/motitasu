@@ -8,6 +8,7 @@ from datetime import date, timedelta, datetime
 from dateutil.relativedelta import relativedelta
 from dataclasses import dataclass
 from typing import Tuple, List, Dict, Optional
+from django.conf import settings
 from django.db.models import Sum
 from django.db import models
 from django.utils import timezone
@@ -87,7 +88,7 @@ class PaidLeaveCalculator:
             user: Userモデルのインスタンス
         """
         self.user = user
-        self.jst = ZoneInfo('Asia/Tokyo')
+        self.jst = ZoneInfo(settings.TIME_ZONE)
     
     def _add_months_with_adjustment(self, base_date: date, months: int, years: int = 0) -> date:
         """

@@ -1,139 +1,100 @@
 {% extends 'base.html' %}
-{% load tz %}
 
-{% block title %}伝言板 - Motitasu{% endblock %}
-
-{% block extra_css %}
-{% load static %}
-<link rel="stylesheet" href="{% static 'bulletin_board/css/bulletin_board.css' %}">
-{% endblock %}
+{% block title %}伝言板{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <h2>伝言板</h2>
+<h1>伝言板</h1>
+
+<!-- メッセージ投稿フォーム -->
+{% if user.is_authenticated %}
+<form method="post">
+    {% csrf_token %}
+    <textarea name="content" rows="3" placeholder="メッセージを入力" maxlength="200" required></textarea><br>
+    <button type="submit">投稿</button>
+</form>
+<hr>
+{% endif %}
+
+<!-- メッセージ一覧 -->
+{% for message in page_obj %}
+<div style="border: 1px solid #ccc; margin: 10px 0; padding: 10px;">
+    <div>
+        <strong>{{ message.user.name }}</strong>
+        <span>{{ message.created_at|date:"Y-m-d H:i" }}</span>
+    </div>
     
-    <!-- メッセージ投稿フォーム -->
-    {% if user.is_authenticated %}
-    <div class="card mb-4">
-        <div class="card-body">
-            <form method="post">
-                {% csrf_token %}
-                <div class="mb-3">
-                    <textarea class="form-control" name="content" rows="3" placeholder="メッセージを入力してください..." maxlength="200" required></textarea>
-                </div>
-                <button type="submit" class="btn btn-primary">投稿</button>
-            </form>
-        </div>
+    <!-- ピン留め表示 -->
+    {% if message.is_pinned %}
+    <div>📌 ピン留め中 {% if message.pin_expires_at %}({{ message.pin_expires_at|date:"m/d H:i" }}まで){% endif %}</div>
+    {% endif %}
+    
+    <p>{{ message.content|linebreaks }}</p>
+    
+    <!-- ピン留めコントロール -->
+    {% if message.user == user %}
+    <div class="pin-controls" data-message-id="{{ message.id }}">
+        {% if message.is_pinned %}
+        <button class="unpin-btn">ピン留め解除</button>
+        {% else %}
+        <button class="pin-btn" data-duration="12">12時間ピン留め</button>
+        <button class="pin-btn" data-duration="24">24時間ピン留め</button>
+        <button class="pin-btn" data-duration="168">1週間ピン留め</button>
+        {% endif %}
     </div>
     {% endif %}
     
-    <!-- メッセージ一覧 -->
-    <div id="message-list">
-        {% for message in page_obj %}
-        <div class="card mb-3">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                    <strong>{{ message.user.name }}</strong>
-                    {% timezone "Asia/Tokyo" %}
-                    <small class="text-muted">{{ message.created_at|date:"Y年m月d日 H:i" }}</small>
-                    {% endtimezone %}
-                </div>
-                
-                <!-- ピン留め表示 -->
-                {% if message.is_pinned %}
-                <div class="mb-2">
-                    <span class="badge bg-warning text-dark">📌 ピン留め中</span>
-                    {% if message.pin_expires_at %}
-                    {% timezone "Asia/Tokyo" %}
-                    <small class="text-muted">({{ message.pin_expires_at|date:"m/d H:i" }}まで)</small>
-                    {% endtimezone %}
-                    {% endif %}
-                </div>
-                {% endif %}
-                
-                <p class="card-text">{{ message.content|linebreaks }}</p>
-                
-                <!-- ピン留めコントロール（投稿者のみ表示） -->
-                {% if message.user == user %}
-                <div class="pin-controls mb-2" data-message-id="{{ message.id }}">
-                    {% if message.is_pinned %}
-                    <button class="btn btn-sm btn-outline-warning unpin-btn">📌 ピン留め解除</button>
-                    {% else %}
-                    <div class="btn-group" role="group">
-                        <button class="btn btn-sm btn-outline-secondary pin-btn" data-duration="12">12時間ピン留め</button>
-                        <button class="btn btn-sm btn-outline-secondary pin-btn" data-duration="24">24時間ピン留め</button>
-                        <button class="btn btn-sm btn-outline-secondary pin-btn" data-duration="168">1週間ピン留め</button>
-                    </div>
-                    {% endif %}
-                </div>
-                {% endif %}
-                
-                <!-- リアクションエリア -->
-                <div class="reaction-area" data-message-id="{{ message.id }}">
-                    {% for reaction_type, emoji in reaction_choices %}
-                    <button class="reaction-btn btn btn-sm me-1 mb-1 {% if reaction_type in message.user_reactions %}btn-secondary{% else %}btn-outline-secondary{% endif %}" 
-                            data-reaction-type="{{ reaction_type }}"
-                            {% if not user.is_authenticated %}disabled{% endif %}>
-                        {{ emoji }}
-                        <span class="reaction-count">
-                            {% for reaction in message.reaction_summary.items %}
-                                {% if reaction.0 == reaction_type %}{{ reaction.1 }}{% endif %}
-                            {% empty %}0{% endfor %}
-                        </span>
-                    </button>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-        {% empty %}
-        <div class="alert alert-info">
-            まだメッセージがありません。
-        </div>
+    <!-- リアクションエリア -->
+    <div class="reaction-area" data-message-id="{{ message.id }}">
+        {% for reaction_type, emoji in reaction_choices %}
+        <button class="reaction-btn" data-reaction-type="{{ reaction_type }}" 
+                {% if not user.is_authenticated %}disabled{% endif %}>
+            {{ emoji }} 
+            <span class="reaction-count">
+                {% for reaction in message.reaction_summary.items %}
+                    {% if reaction.0 == reaction_type %}{{ reaction.1 }}{% endif %}
+                {% empty %}0{% endfor %}
+            </span>
+        </button>
         {% endfor %}
     </div>
+</div>
+{% empty %}
+<p>メッセージがありません。</p>
+{% endfor %}
+
+<!-- ページング -->
+{% if page_obj.has_other_pages %}
+<div>
+    {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}">前へ</a>
+    {% endif %}
     
-    <!-- ページング -->
-    {% if page_obj.has_other_pages %}
-    <nav aria-label="ページング">
-        <ul class="pagination justify-content-center">
-            {% if page_obj.has_previous %}
-            <li class="page-item">
-                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">前へ</a>
-            </li>
-            {% endif %}
-            
-            {% for num in page_obj.paginator.page_range %}
-                {% if page_obj.number == num %}
-                <li class="page-item active">
-                    <span class="page-link">{{ num }}</span>
-                </li>
-                {% else %}
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
-                </li>
-                {% endif %}
-            {% endfor %}
-            
-            {% if page_obj.has_next %}
-            <li class="page-item">
-                <a class="page-link" href="?page={{ page_obj.next_page_number }}">次へ</a>
-            </li>
-            {% endif %}
-        </ul>
-    </nav>
+    {% for num in page_obj.paginator.page_range %}
+        {% if page_obj.number == num %}
+        <strong>{{ num }}</strong>
+        {% else %}
+        <a href="?page={{ num }}">{{ num }}</a>
+        {% endif %}
+    {% endfor %}
+    
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}">次へ</a>
     {% endif %}
 </div>
+{% endif %}
 
-<!-- リアクションユーザー一覧モーダル -->
-<div class="modal fade" id="reactionUsersModal" tabindex="-1">
+<!-- Bootstrap リアクションユーザー一覧モーダル -->
+<div class="modal fade" id="reactionUsersModal" tabindex="-1" aria-labelledby="reactionUsersModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">リアクションしたユーザー</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <h5 class="modal-title" id="reactionUsersModalLabel">リアクションしたユーザー<!-- タイトルは動的に変更されます --></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
             </div>
             <div class="modal-body">
-                <div id="reactionUsersList"></div>
+                <div id="reactionUsersList">
+                    <!-- ユーザーリストがここに動的に挿入されます -->
+                </div>
             </div>
         </div>
     </div>
@@ -143,153 +104,4 @@
 {% block extra_js %}
 {% load static %}
 <script src="{% static 'bulletin_board/js/bulletin_board.js' %}"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // リアクションボタンのクリックイベント
-    document.querySelectorAll('.reaction-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            const messageId = this.closest('.reaction-area').dataset.messageId;
-            const reactionType = this.dataset.reactionType;
-            
-            fetch('{% url "bulletin_board:toggle_reaction" %}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-CSRFToken': getCsrfToken()
-                },
-                body: `message_id=${messageId}&reaction_type=${reactionType}`
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // リアクション数を更新
-                    const countSpan = this.querySelector('.reaction-count');
-                    countSpan.textContent = data.reaction_count;
-                    
-                    // ボタンのスタイルを更新
-                    if (data.action === 'added') {
-                        this.classList.remove('btn-outline-secondary');
-                        this.classList.add('btn-secondary');
-                    } else {
-                        this.classList.remove('btn-secondary');
-                        this.classList.add('btn-outline-secondary');
-                    }
-                } else {
-                    alert('エラーが発生しました: ' + data.error);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('通信エラーが発生しました');
-            });
-        });
-    });
-
-    // ピン留めボタンのクリックイベント
-    document.querySelectorAll('.pin-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            const messageId = this.closest('.pin-controls').dataset.messageId;
-            const duration = this.dataset.duration;
-            
-            fetch('{% url "bulletin_board:toggle_pin" %}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-CSRFToken': getCsrfToken()
-                },
-                body: `message_id=${messageId}&action=pin&duration=${duration}`
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    location.reload(); // ピン留めの表示更新のためリロード
-                } else {
-                    alert('エラーが発生しました: ' + data.error);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('通信エラーが発生しました');
-            });
-        });
-    });
-
-    // ピン留め解除ボタンのクリックイベント
-    document.querySelectorAll('.unpin-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            const messageId = this.closest('.pin-controls').dataset.messageId;
-            
-            fetch('{% url "bulletin_board:toggle_pin" %}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-CSRFToken': getCsrfToken()
-                },
-                body: `message_id=${messageId}&action=unpin`
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    location.reload(); // ピン留めの表示更新のためリロード
-                } else {
-                    alert('エラーが発生しました: ' + data.error);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('通信エラーが発生しました');
-            });
-        });
-    });
-
-    // リアクション数クリックでユーザー一覧表示
-    document.querySelectorAll('.reaction-count').forEach(countSpan => {
-        countSpan.style.cursor = 'pointer';
-        countSpan.addEventListener('click', function(e) {
-            e.stopPropagation();
-            const reactionBtn = this.closest('.reaction-btn');
-            const messageId = reactionBtn.closest('.reaction-area').dataset.messageId;
-            const reactionType = reactionBtn.dataset.reactionType;
-            
-            if (parseInt(this.textContent) > 0) {
-                showReactionUsers(messageId, reactionType);
-            }
-        });
-    });
-});
-
-function getCsrfToken() {
-    return document.querySelector('[name=csrfmiddlewaretoken]').value;
-}
-
-function showReactionUsers(messageId, reactionType) {
-    fetch(`{% url "bulletin_board:get_reaction_users" 0 "dummy" %}`.replace('0', messageId).replace('dummy', reactionType))
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            const usersList = document.getElementById('reactionUsersList');
-            const modal = document.getElementById('reactionUsersModal');
-            const modalTitle = modal.querySelector('.modal-title');
-            
-            modalTitle.textContent = `${data.emoji} リアクションしたユーザー`;
-            usersList.innerHTML = data.users.map(user => 
-                `<div class="mb-2">
-                    <strong>${user.name}</strong>
-                    <small class="text-muted ms-2">${user.created_at}</small>
-                </div>`
-            ).join('');
-            
-            // Bootstrap Modal を表示
-            const bsModal = new bootstrap.Modal(modal);
-            bsModal.show();
-        } else {
-            alert('エラーが発生しました: ' + data.error);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('通信エラーが発生しました');
-    });
-}
-</script>
 {% endblock %}

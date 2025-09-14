@@ -1,6 +1,7 @@
 from django.core.management.base import BaseCommand
 from django.utils import timezone
-import pytz
+from django.conf import settings
+from zoneinfo import ZoneInfo
 from bulletin_board.models import Message
 
 
@@ -20,7 +21,7 @@ class Command(BaseCommand):
         )
     
     def handle(self, *args, **options):
-        jst = pytz.timezone('Asia/Tokyo')
+        jst = ZoneInfo(settings.TIME_ZONE)
         now = timezone.now().astimezone(jst)
         
         # 期限切れのピン留めメッセージを取得

@@ -42,3 +42,145 @@ function initializeTooltips() {
     const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
     [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
 }
+
+/**
+ * 長押しイベントリスナーを追加
+ * @param {HTMLElement} element - 対象要素
+ * @param {Function} callback - 長押し時に実行する関数
+ * @param {number} duration - 長押し判定時間（ミリ秒、デフォルト500ms）
+ */
+function addLongPressListener(element, callback, duration = 500) {
+    let pressTimer;
+    let isLongPress = false;
+    
+    const start = (e) => {
+        // 既にタイマーが動いている場合はクリア
+        if (pressTimer) {
+            clearTimeout(pressTimer);
+        }
+        
+        isLongPress = false;
+        
+        // 長押しタイマー開始
+        pressTimer = setTimeout(() => {
+            isLongPress = true;
+            // 振動フィードバック（対応デバイスのみ）
+            if (navigator.vibrate) {
+                navigator.vibrate(50);
+            }
+            // 長押し時のコールバック実行
+            callback.call(element, e);
+        }, duration);
+        
+        // 視覚的フィードバック用のクラス追加
+        element.classList.add('pressing');
+    };
+    
+    const cancel = () => {
+        if (pressTimer) {
+            clearTimeout(pressTimer);
+            pressTimer = null;
+        }
+        isLongPress = false;
+        // 視覚的フィードバック用のクラス削除
+        element.classList.remove('pressing');
+    };
+    
+    // マウスイベント
+    element.addEventListener('mousedown', start);
+    element.addEventListener('mouseup', cancel);
+    element.addEventListener('mouseleave', cancel);
+    
+    // タッチイベント（モバイル対応）
+    element.addEventListener('touchstart', (e) => {
+        // タッチイベントの場合、マウスイベントも発火するのを防ぐ
+        e.preventDefault();
+        start(e);
+    });
+    element.addEventListener('touchend', cancel);
+    element.addEventListener('touchcancel', cancel);
+    
+    // 通常のクリックを無効化（長押しのみ有効にする場合）
+    element.addEventListener('click', (e) => {
+        if (!isLongPress) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    });
+    
+    // 右クリックメニューを無効化
+    element.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+    });
+}
+
+/**
+ * テンプレート文字列の変数を置換
+ * @param {string} template - テンプレート文字列（例: "{{ name }}さん、こんにちは"）
+ * @param {object} data - 置換するデータ（例: {name: "太郎"}）
+ * @returns {string} 置換後の文字列
+ */
+function replaceTemplate(template, data) {
+    return template.replace(/\{\{\s*(\w+)\s*\}\}/g, (match, key) => {
+        return data.hasOwnProperty(key) ? data[key] : match;
+    });
+}
+
+// HTMLエスケープ
+function escapeHtml(text) {
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    };
+    return text.replace(/[&<>"']/g, m => map[m]);
+}
+
+// CSRFトークンを取得
+function getCsrfToken() {
+    const token = document.querySelector('[name=csrfmiddlewaretoken]');
+    return token ? token.value : '';
+}
+
+// 成功メッセージを表示
+function showSuccess(message) {
+    showNotification(message, 'success');
+}
+
+// エラーメッセージを表示
+function showError(message) {
+    showNotification(message, 'error');
+}
+
+// 通知を表示
+function showNotification(message, type) {
+    // 既存の通知があれば削除
+    const existingNotification = document.querySelector('.notification');
+    if (existingNotification) {
+        existingNotification.remove();
+    }
+    
+    const notification = document.createElement('div');
+    notification.className = `notification alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show`;
+    notification.style.position = 'fixed';
+    notification.style.top = '20px';
+    notification.style.right = '20px';
+    notification.style.zIndex = '9999';
+    notification.style.minWidth = '300px';
+    
+    notification.innerHTML = `
+        ${escapeHtml(message)}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // 5秒後に自動で削除
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 5000);
+}

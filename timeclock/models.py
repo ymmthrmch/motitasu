@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.utils import timezone
+from django.conf import settings
 from datetime import timedelta
 from zoneinfo import ZoneInfo
 
@@ -40,7 +41,7 @@ class TimeRecord(models.Model):
         if not self.user_id:
             return
         
-        jst = ZoneInfo('Asia/Tokyo')
+        jst = ZoneInfo(settings.TIME_ZONE)
         
         if self.timestamp:
             record_time = self.timestamp
@@ -89,7 +90,7 @@ class TimeRecord(models.Model):
                 raise ValidationError('休憩を開始していないため終了できません。')
     
     def __str__(self):
-        jst = ZoneInfo('Asia/Tokyo')
+        jst = ZoneInfo(settings.TIME_ZONE)
         timestamp_jst = self.timestamp.astimezone(jst)
         return f"{self.user.name} - {self.get_clock_type_display()} - {timestamp_jst.strftime('%Y-%m-%d %H:%M:%S')}"
 

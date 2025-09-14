@@ -4,8 +4,9 @@ from django.views.decorators.http import require_POST
 from django.http import JsonResponse
 from django.contrib import messages
 from django.core.paginator import Paginator
+from django.conf import settings
 from .models import Message, Reaction
-import pytz
+from zoneinfo import ZoneInfo
 
 @login_required
 def message_list(request):
@@ -57,23 +58,16 @@ def toggle_reaction(request):
         message = Message.objects.get(id=message_id)
         
         # 既存リアクションを確認
-        existing_reaction = Reaction.objects.filter(
+        reaction, created = Reaction.objects.get_or_create(
             user=request.user,
             message=message,
             reaction_type=reaction_type
-        ).first()
+        )
         
-        if existing_reaction:
-            # 既存リアクションを削除
-            existing_reaction.delete()
+        if not created:
+            reaction.delete()
             action = 'removed'
         else:
-            # 新規リアクションを作成
-            Reaction.objects.create(
-                user=request.user,
-                message=message,
-                reaction_type=reaction_type
-            )
             action = 'added'
         
         # 更新後のリアクション数を取得
@@ -98,7 +92,7 @@ def get_reaction_users(request, message_id, reaction_type):
         message = Message.objects.get(id=message_id)
         reactions = message.reactions.filter(reaction_type=reaction_type).select_related('user')
         
-        jst = pytz.timezone('Asia/Tokyo')
+        jst = ZoneInfo(settings.TIME_ZONE)
         user_list = [
             {
                 'name': reaction.user.name,
@@ -129,7 +123,7 @@ def toggle_pin(request):
         action = request.POST.get('action')  # 'pin' or 'unpin'
         
         message = Message.objects.get(id=message_id, user=request.user)  # 自分の投稿のみ
-        jst = pytz.timezone('Asia/Tokyo')
+        jst = ZoneInfo(settings.TIME_ZONE)
         
         if action == 'pin':
             duration = int(request.POST.get('duration', 24))  # デフォルト24時間
@@ -173,7 +167,7 @@ def get_pin_status(request, message_id):
     
     try:
         message = Message.objects.get(id=message_id)
-        jst = pytz.timezone('Asia/Tokyo')
+        jst = ZoneInfo(settings.TIME_ZONE)
         
         return JsonResponse({
             'success': True,

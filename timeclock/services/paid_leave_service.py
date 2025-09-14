@@ -1,7 +1,8 @@
 from datetime import date, datetime, timedelta
 from typing import Dict, Any, Optional
 from django.utils import timezone
-import pytz
+from django.conf import settings
+from zoneinfo import ZoneInfo
 from django.db.models import Sum, Q
 from dateutil.relativedelta import relativedelta
 
@@ -27,7 +28,7 @@ class PaidLeaveService:
     
     def __init__(self, user):
         self.user = user
-        self.jst = pytz.timezone('Asia/Tokyo')
+        self.jst = ZoneInfo(settings.TIME_ZONE)
     
     def get_paid_leave_status(self) -> Dict[str, Any]:
         """現在の有給休暇状況を取得"""
