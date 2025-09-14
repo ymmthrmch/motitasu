@@ -8,11 +8,6 @@
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-.summary-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-}
-
 .summary-card .card-header {
     padding: 1rem 1.5rem;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -30,101 +25,67 @@
 }
 
 /* 月次給与カード */
-.monthly-wage .amount {
+.main-info {
     font-size: 2.5rem;
     font-weight: bold;
     color: #2d3436;
     margin-bottom: 0.5rem;
+    text-align: center;
 }
 
-.monthly-wage .sub-info {
+.sub-info {
     font-size: 0.9rem;
     color: #636e72;
+    text-align: right;
 }
 
-/* 達成率カード */
-.achievement .achievement-percentage {
-    font-size: 2.5rem;
-    font-weight: bold;
-    background: linear-gradient(45deg, #00b894, #00cec9);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin-bottom: 1rem;
-}
+/* .achievement .progress-bar-container {
+    margin-top: 1rem;
+    background: #f0f0f0;
+    border-radius: 10px;
+    height: 15px;
+    overflow: hidden;
+} */
 
-.achievement .progress-container {
-    width: 100%;
-    height: 25px;
+.progress-bar-container {
+    width: 200px;
+    height: 20px;
     background: linear-gradient(90deg, #e0e0e0, #f5f5f5);
-    border-radius: 15px;
+    border-radius: 10px;
     overflow: hidden;
     position: relative;
     box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
-    margin-bottom: 1rem;
 }
 
-.achievement .progress-bar-dashboard {
-    height: 100%;
-    background: linear-gradient(90deg, #74b9ff, #0984e3, #00b894);
-    border-radius: 15px;
-    position: absolute;
-    right: 0;
-    transition: width 1.5s ease-out;
-    width: 0%;
-    box-shadow: 0 2px 4px rgba(116, 185, 255, 0.3);
-}
-
-.achievement .progress-bar-dashboard::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-    animation: shine 2s ease-in-out infinite;
-}
-
-.achievement .no-target {
-    font-size: 1.2rem;
-    color: #636e72;
-    text-align: center;
-    padding: 2rem 0;
-}
-
-/* 累計統計カード */
-.all-time .stats-row {
+/* 累計カード */
+.stats-row {
     display: flex;
     justify-content: space-between;
+    align-items: center;
     padding: 0.5rem 0;
     border-bottom: 1px solid #f0f0f0;
 }
 
-.all-time .stats-row:last-child {
+.stats-row:last-child {
     border-bottom: none;
 }
 
-.all-time .label {
+.label {
     color: #636e72;
     font-size: 0.95rem;
 }
 
-.all-time .value {
+.value {
     font-weight: 600;
     color: #2d3436;
 }
 
 /* カレンダー */
-.calendar-container {
-    background: white;
-    border-radius: 15px;
+.calendar-card .card-body {
     padding: 1.5rem;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    margin-bottom: 2rem;
 }
 
-.calendar-header {
+.calendar-nav-container {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -198,65 +159,55 @@
 
 .calendar-day.has-data {
     background: white;
+    cursor: pointer;
+}
+
+.calendar-day.has-data:hover {
+    background: #f0f3ff;
+    box-shadow: inset 0 0 0 2px #667eea;
 }
 
 .calendar-day.today {
-    background: #fff9e6;
-    border: 2px solid #fdcb6e;
+    background: #fff3cd;
+    font-weight: bold;
 }
 
-.calendar-day.empty {
-    background: #f8f9fa;
+.calendar-day.saturday {
+    background: rgba(85, 97, 225, 0.05);
 }
 
-.calendar-day:hover:not(.empty) {
-    background: #f0f3ff;
-    cursor: pointer;
+.calendar-day.sunday {
+    background: rgba(225, 112, 85, 0.05);
 }
 
 .day-number {
     font-weight: 600;
     color: #2d3436;
-    margin-bottom: 0.25rem;
-}
-
-.calendar-day.today .day-number {
-    color: #e17055;
+    margin-bottom: 0.5rem;
 }
 
 .day-info {
     font-size: 0.85rem;
 }
 
-.work-hours {
-    color: #00b894;
+.hours {
+    color: #5561e1;
     font-weight: 600;
-    margin-bottom: 0.25rem;
 }
 
 .wage {
-    color: #636e72;
-    font-size: 0.8rem;
+    color: #00b894;
+    font-weight: 600;
 }
 
 .working-badge {
-    display: inline-block;
-    background: #74b9ff;
+    position: absolute;
+    top: 0.25rem;
+    right: 0.25rem;
+    background: #00b894;
     color: white;
-    padding: 0.15rem 0.5rem;
-    border-radius: 10px;
     font-size: 0.7rem;
-    margin-top: 0.25rem;
-}
-
-/* アクションボタン */
-.action-buttons {
-    text-align: center;
-}
-
-.action-buttons .btn {
-    padding: 0.75rem 2rem;
-    font-size: 1.1rem;
+    padding: 0.2rem 0.5rem;
     border-radius: 10px;
     font-weight: 600;
 }
@@ -292,87 +243,58 @@
     }
 }
 
-/* 有給休暇カード */
-.paid-leave-current .leave-days {
+/* バッジ関連 */
+.badges-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.badge-item {
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.badge-item:hover {
+    transform: scale(1.1);
+}
+
+.badge-image {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    margin-bottom: 0.5rem;
+}
+
+.badge-name {
+    font-size: 0.85rem;
+    color: #636e72;
+}
+
+.no-badges {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: #b2bec3;
+    font-size: 1rem;
+    background: linear-gradient(135deg, #f5f3ff 0%, #fafaff 100%);
+    border-radius: 10px;
+    border: 2px dashed #dfe6e9;
+}
+
+.no-badges::before {
+    content: "🏆";
+    display: block;
     font-size: 2.5rem;
-    font-weight: bold;
-    color: #00b894;
-    margin-bottom: 0.5rem;
-}
-
-.paid-leave-next .next-grant-info {
-    text-align: center;
-}
-
-.paid-leave-next .grant-date {
-    font-size: 1.2rem;
-    font-weight: 600;
-    color: #2d3436;
-    margin-bottom: 0.5rem;
-}
-
-.paid-leave-next .grant-days {
-    font-size: 1.1rem;
-    color: #00b894;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-}
-
-.paid-leave-next .countdown {
-    font-size: 0.9rem;
-    color: #636e72;
     margin-bottom: 1rem;
+    opacity: 0.5;
 }
 
-.attendance-requirement {
-    background: #fff3cd;
-    border: 1px solid #ffeaa7;
-    border-radius: 10px;
-    padding: 1rem;
-    margin-top: 1rem;
-}
-
-.requirement-text {
-    font-weight: 600;
-    color: #856404;
-    margin-bottom: 0.5rem;
-}
-
-.requirement-text .highlight {
-    color: #e17055;
-    font-size: 1.2em;
-}
-
-.attendance-rate {
-    font-size: 0.9rem;
-    color: #6c757d;
-}
-
-.eligible-badge {
-    background: #d4edda;
-    color: #155724;
-    padding: 0.75rem 1rem;
-    border-radius: 10px;
-    font-weight: 600;
-    text-align: center;
-    margin-top: 1rem;
-}
-
-.no-next-grant {
-    font-size: 1.1rem;
-    color: #636e72;
+/* アクションボタン */
+.action-buttons {
     text-align: center;
     padding: 2rem 0;
 }
 
-.error-message {
-    color: #dc3545;
-    text-align: center;
-    padding: 1.5rem 0;
-    font-weight: 500;
-}
-
-@keyframes shine {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
-}
+/* 有給休暇カード */

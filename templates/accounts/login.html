@@ -1,39 +1,56 @@
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}ログイン{% endblock %}
+{% block title %}ログイン - Motitasu{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'accounts/css/auth.css' %}">
+{% endblock %}
 
 {% block content %}
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h4>ログイン</h4>
-                </div>
-                <div class="card-body">
-                    <form method="post">
-                        {% csrf_token %}
-                        {% if form.errors %}
-                            <div class="alert alert-danger">
-                                {% for error in form.errors.values %}
-                                {{ error }}
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                        <div class="mb-3">
-                            <label for="id_username" class="form-label">メールアドレス</label>
-                            <input type="email" name="username" class="form-control" id="id_username" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="id_password" class="form-label">パスワード</label>
-                            <input type="password" name="password" class="form-control" id="id_password" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100">ログイン</button>
-                    </form>
-                    <div class="text-center mt-3">
-                        <p>アカウントをお持ちでない方は <a href="{% url 'accounts:signup' %}">新規登録</a></p>
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="card-header">
+            <i class="bi bi-person-circle auth-icon"></i>
+            <h4>ログイン</h4>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                {% if form.errors %}
+                    <div class="auth-alert">
+                        {% for error in form.errors.values %}
+                            {{ error }}
+                        {% endfor %}
                     </div>
+                {% endif %}
+                
+                <div class="mb-3">
+                    <label for="id_username" class="form-label">
+                        <i class="bi bi-envelope"></i> メールアドレス
+                    </label>
+                    <input type="email" name="username" class="form-control" id="id_username" 
+                           placeholder="your@email.com" required autofocus>
                 </div>
+                
+                <div class="mb-3">
+                    <label for="id_password" class="form-label">
+                        <i class="bi bi-lock"></i> パスワード
+                    </label>
+                    <input type="password" name="password" class="form-control" id="id_password" 
+                           placeholder="パスワードを入力" required>
+                </div>
+                
+                <button type="submit" class="btn btn-auth w-100">
+                    <i class="bi bi-box-arrow-in-right"></i> ログイン
+                </button>
+            </form>
+            
+            <div class="auth-footer">
+                <p>アカウントをお持ちでない方は</p>
+                <a href="{% url 'accounts:signup' %}" class="auth-link">
+                    <i class="bi bi-person-plus"></i> 新規登録
+                </a>
             </div>
         </div>
     </div>
