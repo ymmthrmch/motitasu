@@ -6,4 +6,5 @@ class TimeclockConfig(AppConfig):
     name = 'timeclock'
     
     def ready(self):
+        # シグナルを有効化
         import timeclock.signals

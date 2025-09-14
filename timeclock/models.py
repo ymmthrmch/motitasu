@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from datetime import timedelta
-import pytz
+from zoneinfo import ZoneInfo
 
 User = get_user_model()
 
@@ -31,8 +31,7 @@ class TimeRecord(models.Model):
     
     def save(self, *args, **kwargs):
         if not self.timestamp:
-            jst = pytz.timezone('Asia/Tokyo')
-            self.timestamp = timezone.now().astimezone(jst)
+            self.timestamp = timezone.now()
         
         self.clean()
         super().save(*args, **kwargs)
@@ -41,12 +40,12 @@ class TimeRecord(models.Model):
         if not self.user_id:
             return
         
-        jst = pytz.timezone('Asia/Tokyo')
+        jst = ZoneInfo('Asia/Tokyo')
         
         if self.timestamp:
             record_time = self.timestamp
             if timezone.is_naive(record_time):
-                record_time = jst.localize(record_time)
+                record_time = record_time.replace(tzinfo=jst)
             else:
                 record_time = record_time.astimezone(jst)
         else:
@@ -61,7 +60,7 @@ class TimeRecord(models.Model):
             timestamp__lt=day_end
         ).exclude(pk=self.pk).order_by('timestamp')
         
-        last_record = day_records.last()
+        last_record = day_records.filter(timestamp__lte=self.timestamp).last()
         
         if self.clock_type == 'clock_in':
             if day_records.filter(clock_type='clock_in').exists():
@@ -70,17 +69,17 @@ class TimeRecord(models.Model):
                 raise ValidationError('出勤は一日の最初の打刻である必要があります。')
         
         elif self.clock_type == 'clock_out':
-            if not day_records.filter(clock_type='clock_in').exists():
-                raise ValidationError('出勤していないため退勤できません。')
+            if not day_records.filter(clock_type='clock_in', timestamp__lte=self.timestamp).exists():
+                raise ValidationError('出勤後でないため退勤できません。')
             if day_records.filter(clock_type='clock_out').exists():
                 raise ValidationError('この日の退勤は既に打刻されています。')
             if last_record and last_record.clock_type == 'break_start':
                 raise ValidationError('休憩中は退勤できません。先に休憩を終了してください。')
         
         elif self.clock_type == 'break_start':
-            if not day_records.filter(clock_type='clock_in').exists():
+            if not day_records.filter(clock_type='clock_in', timestamp__lte=self.timestamp).exists():
                 raise ValidationError('出勤していないため休憩を開始できません。')
-            if day_records.filter(clock_type='clock_out').exists():
+            if day_records.filter(clock_type='clock_out', timestamp__lte=self.timestamp).exists():
                 raise ValidationError('退勤後は休憩を開始できません。')
             if last_record and last_record.clock_type == 'break_start':
                 raise ValidationError('既に休憩中です。')
@@ -90,7 +89,7 @@ class TimeRecord(models.Model):
                 raise ValidationError('休憩を開始していないため終了できません。')
     
     def __str__(self):
-        jst = pytz.timezone('Asia/Tokyo')
+        jst = ZoneInfo('Asia/Tokyo')
         timestamp_jst = self.timestamp.astimezone(jst)
         return f"{self.user.name} - {self.get_clock_type_display()} - {timestamp_jst.strftime('%Y-%m-%d %H:%M:%S')}"
 
@@ -138,7 +137,6 @@ class PaidLeaveRecord(models.Model):
     RECORD_TYPE_CHOICES = [
         ('grant', '付与'),
         ('use', '使用'),
-        ('expire', '時効消滅'),
     ]
     
     user = models.ForeignKey(
@@ -167,7 +165,12 @@ class PaidLeaveRecord(models.Model):
         verbose_name='使用日',
         null=True,
         blank=True,
-        help_text='有給休暇を使用した日（付与・時効消滅時はNull）'
+        help_text='有給休暇を使用した日（付与・取消・時効消滅時はNull）'
+    )
+    expired = models.BooleanField(
+        verbose_name='時効フラグ',
+        default=False,
+        help_text='この記録が時効により無効化されている場合True'
     )
     description = models.CharField(
         max_length=255,

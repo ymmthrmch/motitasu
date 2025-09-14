@@ -11,13 +11,15 @@ services:
         value: .
 
   - type: cron
-    name: paid-leave-processor
+    name: daily-paid-leave-grants
     env: python
     buildCommand: pip install -r requirements.txt
-    schedule: "0 16 * * *"  # 毎日午前1時（JST）に実行
-    startCommand: python manage.py process_paid_leaves --fix-inconsistencies
+    schedule: "0 15 * * *"  # 毎日午前0時（JST）に実行（UTC 15時）
+    startCommand: python manage.py process_daily_paid_leave_grants
     envVars:
       - key: DJANGO_SETTINGS_MODULE
         value: motitasu.settings.production
       - key: PYTHONPATH
         value: .
+      - key: TZ
+        value: Asia/Tokyo
