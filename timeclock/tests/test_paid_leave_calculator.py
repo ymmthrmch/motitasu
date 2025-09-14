@@ -372,7 +372,7 @@ class TestPaidLeaveCalculator(TestCase):
                 expiry_date=date(2024, 1, 1),
             )
 
-        judgment = calculator.judge_grant_eligibility(1, date(2023, 7, 1))
+        judgment = calculator.judge_grant_eligibility(1)
 
         self.assertEqual(judgment.grant_count, 1)
         self.assertEqual(judgment.judgment_date, date(2023, 7, 1))
@@ -414,7 +414,7 @@ class TestPaidLeaveCalculator(TestCase):
                 expiry_date=date(2024, 1, 1),
             )
 
-        judgment = calculator.judge_grant_eligibility(1, date(2023, 7, 1))
+        judgment = calculator.judge_grant_eligibility(1)
 
         self.assertEqual(judgment.grant_count, 1)
         self.assertEqual(judgment.judgment_date, date(2023, 7, 1))
@@ -456,7 +456,7 @@ class TestPaidLeaveCalculator(TestCase):
             expiry_date=date(2025, 1, 1),
         )
 
-        judgment = calculator.judge_grant_eligibility(1, date(2024, 7, 1))
+        judgment = calculator.judge_grant_eligibility(1)
 
         self.assertEqual(judgment.grant_count, 1)
         self.assertEqual(judgment.judgment_date, date(2024, 7, 1))

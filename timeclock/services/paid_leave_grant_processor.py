@@ -87,8 +87,7 @@ class PaidLeaveGrantProcessor:
             description=judgment.description
         )
         
-        # 残日数更新
-        self.balance_manager.update_user_balance()
+        # 残日数更新はsignals.pyのシグナルで処理されるためここでは不要
         
         return grant_record
     
@@ -152,8 +151,7 @@ class PaidLeaveGrantProcessor:
                 if modified_record is None:
                     modified_record = target_record
         
-        # 残日数を更新
-        self.balance_manager.update_user_balance()
+        # 残日数を更新はsignals.pyのシグナルで処理されるためここでは不要
         
         return modified_record
     
@@ -178,7 +176,7 @@ class PaidLeaveGrantProcessor:
             - target_date時点で期限切れの未使用有給を消滅
             - 時効記録をPaidLeaveRecordに作成
         """
-        # 期限切れの有給記録を取得（まだ時効になっていないもの）
+        # 期限切れの有給記録を取得
         expired_grant_records = PaidLeaveRecord.objects.filter(
             user=self.user,
             record_type='grant',
@@ -192,7 +190,6 @@ class PaidLeaveGrantProcessor:
             expired_record = self._mark_as_expired(grant_record)
             expired_list.append(expired_record)
 
-        if expired_list:
-            self.balance_manager.update_user_balance()
+        # 残日数更新はsignals.pyのシグナルで処理されるためここでは不要
         
         return expired_list

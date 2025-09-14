@@ -4,6 +4,8 @@
 
 from django.core.management.base import BaseCommand
 from datetime import date, datetime
+from django.utils import timezone
+from zoneinfo import ZoneInfo
 import logging
 
 from timeclock.services.paid_leave_auto_processor import PaidLeaveAutoProcessor
@@ -48,7 +50,9 @@ class Command(BaseCommand):
                 )
                 return
         else:
-            target_date = date.today()
+            # JST基準で今日の日付を取得
+            jst = ZoneInfo('Asia/Tokyo')
+            target_date = timezone.now().astimezone(jst).date()
         
         self.stdout.write(f'日次有給付与処理を開始します (対象日: {target_date})')
         logger.info(f'日次有給付与処理を開始: 対象日={target_date}')

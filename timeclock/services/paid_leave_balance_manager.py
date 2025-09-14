@@ -6,6 +6,8 @@ from datetime import date, timedelta
 from dataclasses import dataclass
 from typing import List, Tuple
 from django.db.models import Sum
+from django.utils import timezone
+from zoneinfo import ZoneInfo
 
 from timeclock.models import PaidLeaveRecord
 from .paid_leave_calculator import PaidLeaveCalculator
@@ -104,12 +106,14 @@ class PaidLeaveBalanceManager:
         # 付与記録を取得（同一日の場合は合算）
         grant_records = PaidLeaveRecord.objects.filter(
             user=self.user,
-            record_type='grant'
+            record_type='grant',
+            expired = False
         ).order_by('grant_date')
         
         balance_by_grant_date = []
         total_balance = 0
-        today = date.today()
+        jst = ZoneInfo('Asia/Tokyo')
+        today = timezone.now().astimezone(jst).date()
         
         # 同一grant_dateをグループ化
         grant_groups = {}
@@ -118,7 +122,7 @@ class PaidLeaveBalanceManager:
             if grant_date not in grant_groups:
                 grant_groups[grant_date] = {
                     'total_days': 0,
-                    'expiry_date': grant_record.expiry_date
+                    'expiry_date': grant_record.expiry_date,
                 }
             grant_groups[grant_date]['total_days'] += grant_record.days
         
@@ -131,23 +135,9 @@ class PaidLeaveBalanceManager:
                 grant_date=grant_date
             ).aggregate(total=Sum('days'))['total'] or 0
             
-            # この付与日の時効日数
-            expired_days = PaidLeaveRecord.objects.filter(
-                user=self.user,
-                record_type='expire',
-                grant_date=grant_date
-            ).aggregate(total=Sum('days'))['total'] or 0
-            
-            # この付与日の取消日数
-            cancelled_days = PaidLeaveRecord.objects.filter(
-                user=self.user,
-                record_type='cancel',
-                grant_date=grant_date
-            ).aggregate(total=Sum('days'))['total'] or 0
-            
             # 残日数計算（同一日の複数付与を合算）
             total_grant_days = grant_info['total_days']
-            remaining_days = total_grant_days - used_days - expired_days - cancelled_days
+            remaining_days = total_grant_days - used_days
             remaining_days = max(0, remaining_days)
             
             # 時効まで日数
@@ -164,9 +154,6 @@ class PaidLeaveBalanceManager:
             )
             balance_by_grant_date.append(grant_balance)
             total_balance += remaining_days
-        
-        # 時効が近い順（古い付与日順）にソート
-        balance_by_grant_date.sort(key=lambda x: x.grant_date)
         
         # 近い時効情報を作成（30日以内）
         upcoming_expirations = []

@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, date
-from typing import Dict, List, Optional, Any
+from typing import Dict, Optional, Any
 from django.utils import timezone
-import pytz
+from zoneinfo import ZoneInfo
 
 from ..models import TimeRecord, MonthlyTarget
 
@@ -11,7 +11,7 @@ class WorkTimeService:
     
     def __init__(self, user):
         self.user = user
-        self.jst = pytz.timezone('Asia/Tokyo')
+        self.jst = ZoneInfo('Asia/Tokyo')
     
     def get_daily_summary(self, target_date: Optional[date] = None) -> Dict[str, Any]:
         """
@@ -36,9 +36,7 @@ class WorkTimeService:
             target_date = timezone.now().astimezone(self.jst).date()
         
         # 日付の開始と終了時刻を設定
-        day_start = self.jst.localize(
-            datetime.combine(target_date, datetime.min.time())
-        )
+        day_start = datetime.combine(target_date, datetime.min.time()).replace(tzinfo=self.jst)
         day_end = day_start + timedelta(days=1)
         
         # 指定日の打刻記録を取得

@@ -5,9 +5,10 @@ from django.utils import timezone
 from django.core.exceptions import ValidationError
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
-import pytz
+from zoneinfo import ZoneInfo
 import calendar
 from datetime import datetime, date, timedelta
+from dataclasses import asdict
 from .models import TimeRecord
 from .services import WorkTimeService
 from .services.paid_leave_calculator import PaidLeaveCalculator
@@ -15,7 +16,7 @@ from .services.paid_leave_balance_manager import PaidLeaveBalanceManager
 
 @login_required
 def timeclock(request):
-    jst = pytz.timezone('Asia/Tokyo')
+    jst = ZoneInfo('Asia/Tokyo')
     now_jst = timezone.now().astimezone(jst)
     today_start = now_jst.replace(hour=0, minute=0, second=0, microsecond=0)
     today_end = today_start + timezone.timedelta(days=1)
@@ -41,11 +42,30 @@ def timeclock(request):
         elif last_record.clock_type == 'break_end':
             available_actions.extend(['break_start', 'clock_out'])
     
+    # 退勤済みの場合、成果情報を計算
+    work_summary = None
+    if last_record and last_record.clock_type == 'clock_out':
+        service = WorkTimeService(request.user)
+        daily_summary = service.get_daily_summary()
+        monthly_summary = service.get_monthly_summary()
+        
+        if not daily_summary['error']:
+            work_time_str = service.format_timedelta(daily_summary['work_time'])
+            
+            work_summary = {
+                'work_time': work_time_str,
+                'wage': daily_summary['wage'],
+                'achievement_rate': monthly_summary['achievement_rate'],
+                'total_wage': monthly_summary['total_wage'],
+                'target_income': monthly_summary['target_income'],
+            }
+    
     context = {
         'today_records': today_records,
         'available_actions': available_actions,
         'current_time': now_jst.strftime('%Y-%m-%d %H:%M:%S'),
         'last_record': last_record,
+        'work_summary': work_summary,
     }
     
     return render(request, 'timeclock/timeclock.html', context)
@@ -60,41 +80,28 @@ def clock_action(request):
         return redirect('timeclock')
     
     try:
-        jst = pytz.timezone('Asia/Tokyo')
-        timestamp = timezone.now().astimezone(jst)
+        from .signals import handle_time_record_save, handle_time_record_delete
         
-        record = TimeRecord(
-            user=request.user,
-            clock_type=action_type,
-            timestamp=timestamp
-        )
-        record.save()
+        # 打刻時はシグナル無効化（リアルタイム処理では再判定を行わない）
+        handle_time_record_save._disabled = True
+        handle_time_record_delete._disabled = True
         
-        # 退勤時に労働時間と給与を計算して表示
-        if action_type == 'clock_out':
-            service = WorkTimeService(request.user)
-            daily_summary = service.get_daily_summary()
-            monthly_summary = service.get_monthly_summary()
+        try:
+            jst = ZoneInfo('Asia/Tokyo')
+            timestamp = timezone.now().astimezone(jst)
             
-            if daily_summary['error']:
-                messages.warning(request, daily_summary['error'])
-            else:
-                work_time_str = service.format_timedelta(daily_summary['work_time'])
-                
-                message = f"退勤を打刻しました。\n"
-                message += f"本日の労働時間: {work_time_str}"
-                
-                if daily_summary['wage'] > 0:
-                    message += f"\n本日の給与: {daily_summary['wage']:,}円"
-                
-                # 目標月収に対する達成率を追加
-                if monthly_summary['achievement_rate'] is not None:
-                    message += f"\n目標月収達成率: {monthly_summary['achievement_rate']}%"
-                    message += f"\n月収合計: {monthly_summary['total_wage']:,}円 / {monthly_summary['target_income']:,}円"
-                
-                messages.success(request, message, extra_tags='work_summary')
-        else:
-            messages.success(request, f'{record.get_clock_type_display()}を打刻しました。')
+            record = TimeRecord(
+                user=request.user,
+                clock_type=action_type,
+                timestamp=timestamp
+            )
+            record.save()
+            
+        finally:
+            # シグナルを再有効化
+            handle_time_record_save._disabled = False
+            handle_time_record_delete._disabled = False
+            
     except ValidationError as e:
         messages.error(request, str(e.message if hasattr(e, 'message') else e.messages[0]))
     except Exception as e:
@@ -104,7 +111,7 @@ def clock_action(request):
 
 @login_required
 def get_current_time(request):
-    jst = pytz.timezone('Asia/Tokyo')
+    jst = ZoneInfo('Asia/Tokyo')
     now_jst = timezone.now().astimezone(jst)
     return JsonResponse({
         'time': now_jst.strftime('%H:%M:%S'),
@@ -115,7 +122,7 @@ def get_current_time(request):
 @login_required
 def dashboard(request):
     """個人の勤務状況ダッシュボード"""
-    jst = pytz.timezone('Asia/Tokyo')
+    jst = ZoneInfo('Asia/Tokyo')
     now = timezone.now().astimezone(jst)
     
     year = int(request.GET.get('year', now.year))
@@ -171,44 +178,36 @@ def dashboard(request):
     
     # 有給休暇情報を取得
     balance_manager = PaidLeaveBalanceManager(request.user)
-    paid_leave_balance = balance_manager.get_current_balance()
+    paid_leave_balance_info = balance_manager.get_detailed_balance_info()
     
     # 次回の有給付与予定を計算
     calculator = PaidLeaveCalculator(request.user)
-    next_grant_info = None
-    if hasattr(request.user, 'hire_date') and request.user.hire_date:
-        # 次回の付与日を計算（現在の日付より後の最初の付与日を探す）
-        grant_count = 1
-        while grant_count <= 20:  # 安全のため20回まで
-            grant_date = calculator.calculate_grant_date(grant_count)
-            if grant_date > date.today():
-                next_grant_info = {
-                    'grant_date': grant_date,
-                    'grant_count': grant_count,
-                    'expected_days': calculator.determine_grant_days(grant_count, request.user.weekly_work_days)
-                }
-                break
-            grant_count += 1
+    next_grant_info = calculator.get_next_grant_info()
+
+    # dataclassを辞書に変換してから結合
+    paid_leave_status = {}
+    if paid_leave_balance_info:
+        paid_leave_status.update(asdict(paid_leave_balance_info))
+    if next_grant_info:
+        paid_leave_status.update(asdict(next_grant_info))
     
     context = {
         'year': year,
         'month': month,
-        'month_name': calendar.month_name[month],
         'calendar_weeks': calendar_weeks,
         'monthly_summary': monthly_summary,
         'prev_month': prev_month,
         'next_month': next_month,
         'all_time_stats': all_time_stats,
         'weekdays': ['月', '火', '水', '木', '金', '土', '日'],
-        'paid_leave_balance': paid_leave_balance,
-        'next_grant_info': next_grant_info
+        'paid_leave_status': paid_leave_status
     }
     
     return render(request, 'timeclock/dashboard.html', context)
 
 def get_all_time_stats(user):
     """全期間の勤務統計を取得"""
-    jst = pytz.timezone('Asia/Tokyo')
+    jst = ZoneInfo('Asia/Tokyo')
     
     # 最初の打刻記録を取得
     first_record = TimeRecord.objects.filter(

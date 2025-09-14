@@ -270,8 +270,3 @@ def handle_paid_leave_record_delete(sender, instance, **kwargs):
             exc_info=True
         )
         # シグナル処理のエラーは握りつぶして処理を続行
-
-
-# 互換性のためのエイリアス（既存コードが参照している可能性があるため）
-handle_time_record_change = handle_time_record_save
-handle_paid_leave_record_change = handle_paid_leave_record_save

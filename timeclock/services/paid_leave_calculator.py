@@ -4,12 +4,14 @@
 有給休暇の付与計算、出勤率計算、判定処理を担当
 """
 
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 from dateutil.relativedelta import relativedelta
 from dataclasses import dataclass
 from typing import Tuple, List, Dict, Optional
 from django.db.models import Sum
 from django.db import models
+from django.utils import timezone
+from zoneinfo import ZoneInfo
 import math
 
 from ..models import User
@@ -68,6 +70,7 @@ class PaidLeaveJudgment:
 class NextGrantInfo:
     """次回付与情報（ユーザー向け表示用）"""
     next_grant_date: date         # 次回付与日
+    period_end: date              # 判定期間終了日
     days_until_grant: int         # 付与日まで残り日数
     current_attendance_days: int   # 現時点の出勤日数
     required_attendance_days: int  # 必要出勤日数（80%基準）
@@ -84,6 +87,7 @@ class PaidLeaveCalculator:
             user: Userモデルのインスタンス
         """
         self.user = user
+        self.jst = ZoneInfo('Asia/Tokyo')
     
     def _add_months_with_adjustment(self, base_date: date, months: int, years: int = 0) -> date:
         """
@@ -203,12 +207,16 @@ class PaidLeaveCalculator:
         Rules:
             - 実出勤日数 + 有給休暇取得日数
         """
+        # JSTでの日付範囲を設定
+        start_datetime = datetime.combine(start_date, datetime.min.time()).replace(tzinfo=self.jst)
+        end_datetime = datetime.combine(end_date, datetime.max.time()).replace(tzinfo=self.jst)
+        
         # 実出勤日数を計算（clock_inレコード数）
         actual_work_days = TimeRecord.objects.filter(
             user=self.user,
             clock_type='clock_in',
-            timestamp__date__gte=start_date,
-            timestamp__date__lte=end_date
+            timestamp__gte=start_datetime,
+            timestamp__lte=end_datetime
         ).count()
         
         # 有給取得日数を計算
@@ -470,7 +478,8 @@ class PaidLeaveCalculator:
             - 現在の出勤状況も含める
         """
         if reference_date is None:
-            reference_date = date.today()
+            # JSTでの今日を取得
+            reference_date = timezone.now().astimezone(self.jst).date()
         
         # 次回の付与回数を特定
         next_grant_count = 1
@@ -516,6 +525,7 @@ class PaidLeaveCalculator:
         
         return NextGrantInfo(
             next_grant_date=next_grant_date,
+            period_end=period_end,
             days_until_grant=days_until_grant,
             current_attendance_days=current_attendance_days,
             required_attendance_days=required_attendance_days,

@@ -9,6 +9,7 @@ from typing import List, Optional
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.utils import timezone
+from zoneinfo import ZoneInfo
 import logging
 
 from ..models import PaidLeaveRecord
@@ -156,8 +157,9 @@ class PaidLeaveAutoProcessor:
         if not user.hire_date or not user.paid_leave_grant_schedule:
             return []
         
-        # 現在日で直近付与日を取得
-        today = timezone.now().date()
+        # 現在日で直近付与日を取得（JST）
+        jst = ZoneInfo('Asia/Tokyo')
+        today = timezone.now().astimezone(jst).date()
         latest_grant_date = user.get_latest_grant_date(today)
         
         if latest_grant_date is None:
