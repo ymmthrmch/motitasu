@@ -63,18 +63,7 @@ function confirmClockAction(event, actionType, actionName) {
     }
 }
 
-function animateProgressBar() {
-    const progressBars = document.querySelectorAll('.progress-bar');
-    progressBars.forEach(bar => {
-        const achievement = parseFloat(bar.getAttribute('data-achievement'));
-        if (!isNaN(achievement)) {
-            setTimeout(() => {
-                const width = Math.min(achievement, 100);
-                bar.style.width = width + '%';
-            }, 500);
-        }
-    });
-}
+// 共通ユーティリティでanimateProgressBar()を使用
 
 document.addEventListener('DOMContentLoaded', function () {
     syncWithServerTime();

@@ -108,13 +108,13 @@
                 <div class="card-body">
                     {% if monthly_summary.achievement_rate is not None %}
                     <div class="main-info animate-value {% if monthly_summary.achievement_rate >= 100 %}text-success{% endif %}">{{ monthly_summary.achievement_rate }}%</div>
-                    <div class="stats-row">
-                        <span class="label">月収目標:</span>
-                        <span class="value">{{ monthly_summary.target_income|floatformat:0 }}円</span>
-                    </div>
                     <div class="progress-container">
                         <div class="progress-bar" data-achievement="{{ monthly_summary.achievement_rate }}">
                         </div>
+                    </div>
+                    <div class="stats-row">
+                        <span class="label">月収目標:</span>
+                        <span class="value">{{ monthly_summary.target_income|floatformat:0 }}円</span>
                     </div>
                     {% else %}
                     <div class="no-target">目標未設定</div>
