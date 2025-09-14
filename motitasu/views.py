@@ -1,5 +1,6 @@
-from django.shortcuts import render
+from django.shortcuts import redirect
 
 
 def home(request):
-    return render(request, 'home.html')
+    """ホーム画面 - 伝言板へリダイレクト"""
+    return redirect('bulletin_board:message_list')
