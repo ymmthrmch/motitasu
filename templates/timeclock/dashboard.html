@@ -9,7 +9,7 @@
 
 {% block content %}
 <div class="container my-4">
-    <h1 class="text-center mb-4">勤務ダッシュボード</h1>
+    <h1 class="page-title"><i class="bi bi-bar-chart"></i> 勤務ダッシュボード</h1>
 
     <!-- カレンダー -->
     <div class="summary-card calendar-card mb-4">
@@ -241,11 +241,11 @@
 
 <!-- アクションボタン -->
     <div class="action-buttons">
-        <a href="{% url 'timeclock' %}" class="btn btn-primary">打刻画面へ</a>
+        <a href="{% url 'timeclock:timeclock' %}" class="btn btn-primary">打刻画面へ</a>
     </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'timeclock/js/dashboard.js' %}"></script>
+<script src="{% static 'timeclock/js/dashboard.js' %}?v={% now 'U' %}"></script>
 {% endblock %}

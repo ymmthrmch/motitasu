@@ -184,3 +184,29 @@ function showNotification(message, type) {
         }
     }, 5000);
 }
+
+/**
+ * 文字数カウンター機能
+ * @param {HTMLTextAreaElement} textarea - 対象のテキストエリア
+ * @param {HTMLElement} counter - カウンター表示要素
+ * @param {HTMLButtonElement} submitBtn - 送信ボタン（任意）
+ * @param {number} maxLength - 最大文字数（デフォルト200）
+ */
+function updateCharacterCounter(textarea, counter, submitBtn = null, maxLength = 200) {
+    const currentLength = textarea.value.length;
+    
+    counter.textContent = `${currentLength}/${maxLength}文字`;
+    
+    // スタイル更新
+    counter.classList.remove('warning', 'danger');
+    if (currentLength > maxLength) {
+        counter.classList.add('danger');
+    } else if (currentLength > maxLength * 0.9) {
+        counter.classList.add('warning');
+    }
+    
+    // 送信ボタンの状態更新（ボタンが指定されている場合）
+    if (submitBtn) {
+        submitBtn.disabled = currentLength === 0 || currentLength > maxLength;
+    }
+}

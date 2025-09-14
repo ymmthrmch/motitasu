@@ -4,7 +4,7 @@
 {% block title %}新規登録 - Motitasu{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'accounts/css/auth.css' %}">
+<link rel="stylesheet" href="{% static 'accounts/css/auth.css' %}?v={% now 'U' %}">
 {% endblock %}
 
 {% block content %}

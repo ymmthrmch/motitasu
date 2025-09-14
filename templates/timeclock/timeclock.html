@@ -9,7 +9,7 @@
 
 {% block content %}
 <div class="container my-4">
-    <h1 class="text-center mb-4">打刻管理システム</h1>
+    <h1 class="page-title"><i class="bi bi-clock"></i> 打刻管理システム</h1>
 
     <div class="clock-container mb-4">
         <div class="date-display" id="dateDisplay"></div>
@@ -89,7 +89,7 @@
                 </div>
 
                 <div class="summary-item dashboard-link-item">
-                    <a href="{% url 'dashboard' %}" class="btn btn-primary view-dashboard-btn">
+                    <a href="{% url 'timeclock:dashboard' %}" class="btn btn-primary view-dashboard-btn">
                         <i class="fas fa-chart-line"></i>
                         詳細なダッシュボードを見る
                     </a>
@@ -103,7 +103,7 @@
     {% if available_actions %}
     <div class="clock-buttons mb-4">
         {% if 'clock_in' in available_actions %}
-        <form method="post" action="{% url 'clock_action' %}">
+        <form method="post" action="{% url 'timeclock:clock_action' %}">
             {% csrf_token %}
             <input type="hidden" name="action_type" value="clock_in">
             <button type="submit" class="clock-btn clock-in w-100">出勤</button>
@@ -111,7 +111,7 @@
         {% endif %}
 
         {% if 'break_start' in available_actions %}
-        <form method="post" action="{% url 'clock_action' %}">
+        <form method="post" action="{% url 'timeclock:clock_action' %}">
             {% csrf_token %}
             <input type="hidden" name="action_type" value="break_start">
             <button type="submit" class="clock-btn break-start w-100">休憩開始</button>
@@ -119,7 +119,7 @@
         {% endif %}
 
         {% if 'break_end' in available_actions %}
-        <form method="post" action="{% url 'clock_action' %}">
+        <form method="post" action="{% url 'timeclock:clock_action' %}">
             {% csrf_token %}
             <input type="hidden" name="action_type" value="break_end">
             <button type="submit" class="clock-btn break-end w-100">休憩終了</button>
@@ -127,7 +127,7 @@
         {% endif %}
 
         {% if 'clock_out' in available_actions %}
-        <form method="post" action="{% url 'clock_action' %}">
+        <form method="post" action="{% url 'timeclock:clock_action' %}">
             {% csrf_token %}
             <input type="hidden" name="action_type" value="clock_out">
             <button type="submit" class="clock-btn clock-out w-100">退勤</button>
@@ -153,9 +153,9 @@
     {% endif %}
 </div>
 
-<input type="hidden" id="currentTimeUrl" value="{% url 'get_current_time' %}">
+<input type="hidden" id="currentTimeUrl" value="{% url 'timeclock:get_current_time' %}">
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'timeclock/js/timeclock.js' %}"></script>
+<script src="{% static 'timeclock/js/timeclock.js' %}?v={% now 'U' %}"></script>
 {% endblock %}

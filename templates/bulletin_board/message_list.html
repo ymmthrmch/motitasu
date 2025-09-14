@@ -1,94 +1,140 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}伝言板{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'bulletin_board/css/bulletin_board.css' %}?v={% now 'U' %}">
+{% endblock %}
+
 {% block content %}
-<h1>伝言板</h1>
+<div class="container my-4">
+    <h1 class="page-title">
+        <i class="bi bi-house"></i> ホーム
+    </h1>
 
-<!-- メッセージ投稿フォーム -->
-{% if user.is_authenticated %}
-<form method="post">
-    {% csrf_token %}
-    <textarea name="content" rows="3" placeholder="メッセージを入力" maxlength="200" required></textarea><br>
-    <button type="submit">投稿</button>
-</form>
-<hr>
-{% endif %}
-
-<!-- メッセージ一覧 -->
-{% for message in page_obj %}
-<div style="border: 1px solid #ccc; margin: 10px 0; padding: 10px;">
-    <div>
-        <strong>{{ message.user.name }}</strong>
-        <span>{{ message.created_at|date:"Y-m-d H:i" }}</span>
-    </div>
-    
-    <!-- ピン留め表示 -->
-    {% if message.is_pinned %}
-    <div>📌 ピン留め中 {% if message.pin_expires_at %}({{ message.pin_expires_at|date:"m/d H:i" }}まで){% endif %}</div>
-    {% endif %}
-    
-    <p>{{ message.content|linebreaks }}</p>
-    
-    <!-- ピン留めコントロール -->
-    {% if message.user == user %}
-    <div class="pin-controls" data-message-id="{{ message.id }}">
-        {% if message.is_pinned %}
-        <button class="unpin-btn">ピン留め解除</button>
-        {% else %}
-        <button class="pin-btn" data-duration="12">12時間ピン留め</button>
-        <button class="pin-btn" data-duration="24">24時間ピン留め</button>
-        <button class="pin-btn" data-duration="168">1週間ピン留め</button>
-        {% endif %}
-    </div>
-    {% endif %}
-    
-    <!-- リアクションエリア -->
-    <div class="reaction-area" data-message-id="{{ message.id }}">
-        {% for reaction_type, emoji in reaction_choices %}
-        <button class="reaction-btn" data-reaction-type="{{ reaction_type }}" 
-                {% if not user.is_authenticated %}disabled{% endif %}>
-            {{ emoji }} 
-            <span class="reaction-count">
-                {% for reaction in message.reaction_summary.items %}
-                    {% if reaction.0 == reaction_type %}{{ reaction.1 }}{% endif %}
-                {% empty %}0{% endfor %}
-            </span>
-        </button>
+    <!-- メッセージ一覧 -->
+    {% if page_obj %}
+    <div class="messages-grid">
+        {% for message in page_obj %}
+        <div class="memo-card {% if message.is_pinned %}pinned{% endif %}" data-message-id="{{ message.id }}">
+            <!-- カードヘッダー -->
+            <div class="memo-header">
+                <div>
+                    <div class="memo-author">{{ message.user.name }}</div>
+                    <div class="memo-date">{{ message.created_at|date:"n月d日" }}</div>
+                </div>
+                {% if message.user == user %}
+                <div class="memo-menu">
+                    <button class="menu-toggle" type="button" onclick="toggleDropdown(this)">
+                        <i class="bi bi-three-dots"></i>
+                    </button>
+                    <div class="dropdown-menu">
+                        {% if message.is_pinned %}
+                        <button class="dropdown-item unpin-btn" data-message-id="{{ message.id }}">
+                            <i class="bi bi-pin-angle-fill"></i> ピン留め解除
+                        </button>
+                        {% else %}
+                        <button class="dropdown-item pin-btn" data-message-id="{{ message.id }}" data-duration="12">
+                            <i class="bi bi-pin-angle-fill"></i> 12時間ピン留め
+                        </button>
+                        <button class="dropdown-item pin-btn" data-message-id="{{ message.id }}" data-duration="24">
+                            <i class="bi bi-pin-angle-fill"></i> 24時間ピン留め
+                        </button>
+                        <button class="dropdown-item pin-btn" data-message-id="{{ message.id }}" data-duration="168">
+                            <i class="bi bi-pin-angle-fill"></i> 1週間ピン留め
+                        </button>
+                        {% endif %}
+                        <button class="dropdown-item danger" onclick="deleteMessage('{{ message.id }}')">
+                            <i class="bi bi-trash"></i> 削除
+                        </button>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- ピン留め情報 -->
+            {% if message.is_pinned and message.pin_expires_at %}
+            <div class="pin-info">
+                <i class="bi bi-pin-angle-fill"></i> {{ message.pin_expires_at|date:"m/d H:i" }}まで
+            </div>
+            {% endif %}
+            
+            <!-- メッセージ内容 -->
+            <div class="memo-content">
+                {{ message.content|linebreaks }}
+            </div>
+            
+            <!-- リアクションエリア -->
+            <div class="memo-reactions reaction-area" data-message-id="{{ message.id }}">
+                {% for reaction_type, emoji in reaction_choices %}
+                <button class="reaction-btn {% if reaction_type in message.user_reactions %}active{% endif %}" 
+                        data-reaction-type="{{ reaction_type }}">
+                    <span>{{ emoji }}</span>
+                    <span class="reaction-count">
+                        {% for reaction_type_key, count in message.reaction_summary.items %}
+                            {% if reaction_type_key == reaction_type %}{{ count }}{% endif %}
+                        {% empty %}0{% endfor %}
+                    </span>
+                </button>
+                {% endfor %}
+            </div>
+        </div>
         {% endfor %}
     </div>
-</div>
-{% empty %}
-<p>メッセージがありません。</p>
-{% endfor %}
+    {% else %}
+    <div class="empty-messages">
+        まだメッセージがありません。<br>
+        最初のメッセージを投稿してみましょう！
+    </div>
+    {% endif %}
 
-<!-- ページング -->
-{% if page_obj.has_other_pages %}
-<div>
-    {% if page_obj.has_previous %}
-    <a href="?page={{ page_obj.previous_page_number }}">前へ</a>
-    {% endif %}
-    
-    {% for num in page_obj.paginator.page_range %}
-        {% if page_obj.number == num %}
-        <strong>{{ num }}</strong>
-        {% else %}
-        <a href="?page={{ num }}">{{ num }}</a>
-        {% endif %}
-    {% endfor %}
-    
-    {% if page_obj.has_next %}
-    <a href="?page={{ page_obj.next_page_number }}">次へ</a>
+    <!-- ページング -->
+    {% if page_obj.has_other_pages %}
+    <div class="pagination-container">
+        <div class="pagination">
+            {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}" class="page-link">
+                ← 前へ
+            </a>
+            {% endif %}
+            
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                <span class="page-link active">{{ num }}</span>
+                {% else %}
+                <a href="?page={{ num }}" class="page-link">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+            
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="page-link">
+                次へ →
+            </a>
+            {% endif %}
+        </div>
+    </div>
     {% endif %}
 </div>
+
+<!-- フローティングアクションボタン -->
+{% if user.is_authenticated %}
+<button type="button" class="floating-action-btn" id="showPostModal" title="新しいメッセージを投稿">
+    <i class="bi bi-pencil-square"></i> 
+</button>
 {% endif %}
+
+<!-- 打刻画面へのリンクボタン -->
+<a href="{% url 'timeclock:timeclock' %}" class="floating-timeclock-btn" title="打刻画面へ">
+    <i class="bi bi-clock"></i> 打刻画面
+</a>
 
 <!-- Bootstrap リアクションユーザー一覧モーダル -->
 <div class="modal fade" id="reactionUsersModal" tabindex="-1" aria-labelledby="reactionUsersModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="reactionUsersModalLabel">リアクションしたユーザー<!-- タイトルは動的に変更されます --></h5>
+                <h5 class="modal-title" id="reactionUsersModalLabel">リアクションしたユーザー</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
             </div>
             <div class="modal-body">
@@ -99,9 +145,43 @@
         </div>
     </div>
 </div>
+
+<!-- 投稿モーダル -->
+{% if user.is_authenticated %}
+<div class="modal fade post-modal" id="postModal" tabindex="-1" aria-labelledby="postModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="postModalLabel"><i class="bi bi-pencil-square"></i> 新しいメッセージ</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
+            </div>
+            <form method="post" id="modalMessageForm">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <textarea 
+                        name="content" 
+                        class="modal-textarea" 
+                        placeholder="メッセージを入力してください..." 
+                        maxlength="200" 
+                        required
+                        id="modalTextarea"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <div class="draft-indicator" id="draftIndicator" style="display: none;">
+                        <span>下書きが復元されました</span>
+                    </div>
+                    <div class="modal-char-counter" id="modalCharCounter">0/200文字</div>
+                    <button type="submit" class="modal-submit-btn" id="modalSubmitBtn">
+                        <i class="bi bi-pencil-square"></i> 投稿する
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
 {% endblock %}
 
 {% block extra_js %}
-{% load static %}
-<script src="{% static 'bulletin_board/js/bulletin_board.js' %}"></script>
+<script src="{% static 'bulletin_board/js/bulletin_board.js' %}?v={% now 'U' %}"></script>
 {% endblock %}

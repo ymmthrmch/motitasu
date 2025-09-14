@@ -1,6 +1,8 @@
 from django.urls import path
 from . import views
 
+app_name = 'timeclock'
+
 urlpatterns = [
     path('', views.timeclock, name='timeclock'),
     path('clock/', views.clock_action, name='clock_action'),
