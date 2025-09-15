@@ -162,8 +162,12 @@ function showNotification(message, type) {
         existingNotification.remove();
     }
     
+    let alertClass = 'danger'; // デフォルト
+    if (type === 'success') alertClass = 'success';
+    else if (type === 'info') alertClass = 'info';
+    
     const notification = document.createElement('div');
-    notification.className = `notification alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show`;
+    notification.className = `notification alert alert-${alertClass} alert-dismissible fade show`;
     notification.style.position = 'fixed';
     notification.style.top = '20px';
     notification.style.right = '20px';

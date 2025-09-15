@@ -35,3 +35,6 @@ Thumbs.db
 # テスト関連
 .coverage
 htmlcov/
+
+# 個人用メモ
+todo.txt

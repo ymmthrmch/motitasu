@@ -27,27 +27,27 @@
 
 .memo-card:nth-child(2n) {
     transform: rotate(1deg);
-    background: #b8e6b8; /* 緑の付箋 */
+    background: #c2f7c2; /* 緑の付箋 */
 }
 
 .memo-card:nth-child(3n) {
     transform: rotate(-0.5deg);
-    background: #ffb3ba; /* ピンクの付箋 */
+    background: #fce3c1; /* オレンジ色の付箋 */
 }
 
 .memo-card:nth-child(5n) {
     transform: rotate(-1.2deg);
-    background: #dda0dd; /* 薄紫の付箋 */
+    background: #ebbaeb; /* 薄紫の付箋 */
 }
 
 .memo-card:nth-child(6n) {
     transform: rotate(0.8deg);
-    background: #f0e68c; /* カーキ色の付箋 */
+    background: #ffd3e5; /* ピンクの付箋 */
 }
 
-.memo-card:nth-child(8n) {
+.memo-card:nth-child(7n) {
     transform: rotate(1.5deg);
-    background: #bae1ff; /* 青の付箋 */
+    background: #d2eafc; /* 青の付箋 */
 }
 
 .memo-card:hover {
@@ -58,8 +58,8 @@
 
 /* ピン留めメッセージ */
 .memo-card.pinned {
-    background: #fff2cc !important;
-    border: 2px solid #d6b656;
+    background: #ffc6c6 !important;
+    border: 2px solid #f27e7e;
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
     transform: rotate(0deg) !important;
 }

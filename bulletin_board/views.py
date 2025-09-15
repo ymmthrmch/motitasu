@@ -190,6 +190,33 @@ def get_pin_status(request, message_id):
             'error': str(e)
         })
 
+@login_required
+@require_POST
+def delete_message(request):
+    """メッセージの削除（Ajax API）"""
+    
+    try:
+        message_id = request.POST.get('message_id')
+        
+        message = Message.objects.get(id=message_id, user=request.user)  # 自分の投稿のみ
+        message.delete()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'メッセージを削除しました。'
+        })
+        
+    except Message.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'error': 'メッセージが見つからないか、削除権限がありません。'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })
+
 # ヘルパー関数
 def get_reaction_summary(message):
     """メッセージのリアクション数を取得"""

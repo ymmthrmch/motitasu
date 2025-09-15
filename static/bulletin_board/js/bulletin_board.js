@@ -77,7 +77,7 @@ function initializePinButtons() {
     // ピン留めボタン
     document.querySelectorAll('.pin-btn').forEach(button => {
         button.addEventListener('click', function () {
-            const messageId = this.closest('.pin-controls').dataset.messageId;
+            const messageId = this.dataset.messageId;
             const duration = this.dataset.duration;
 
             // ボタンをローディング状態に
@@ -88,8 +88,7 @@ function initializePinButtons() {
                 .then(data => {
                     if (data.success) {
                         showSuccess('メッセージをピン留めしました');
-                        // ページをリロードしてピン留め状態を反映
-                        setTimeout(() => location.reload(), 1000);
+                        setTimeout(() => location.reload(),1000);
                     } else {
                         showError('ピン留めの処理中にエラーが発生しました: ' + data.error);
                         this.classList.remove('loading');
@@ -108,7 +107,7 @@ function initializePinButtons() {
     // ピン留め解除ボタン
     document.querySelectorAll('.unpin-btn').forEach(button => {
         button.addEventListener('click', function () {
-            const messageId = this.closest('.pin-controls').dataset.messageId;
+            const messageId = this.dataset.messageId;
 
             // ボタンをローディング状態に
             this.classList.add('loading');
@@ -203,6 +202,19 @@ async function togglePin(messageId, action, duration = null) {
     return await response.json();
 }
 
+// メッセージ削除API呼び出し
+async function deleteMessageApi(messageId) {
+    const response = await fetch('/bulletin/api/delete/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: `message_id=${messageId}`
+    });
+    return await response.json();
+}
+
 // リアクションボタンの表示更新
 function updateReactionButton(button, data) {
     const countSpan = button.querySelector('.reaction-count');
@@ -288,10 +300,26 @@ function initializeDropdowns() {
         }
     };
 
-    // 削除機能（ガワのみ）
+    // 削除機能
     window.deleteMessage = function (messageId) {
-        if (confirm('このメッセージを削除しますか？')) {
-            showError('削除機能は準備中です。');
+        if (confirm('このメッセージを削除しますか？\n削除したメッセージは元に戻せません。')) {
+            // ローディング状態を表示
+            showNotification('メッセージを削除しています...', 'info');
+            
+            deleteMessageApi(messageId)
+                .then(data => {
+                    if (data.success) {
+                        showSuccess(data.message);
+                        // ページをリロードして削除を反映
+                        setTimeout(() => location.reload(), 1000);
+                    } else {
+                        showError('削除中にエラーが発生しました: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Delete error:', error);
+                    showError('通信エラーが発生しました');
+                });
         }
     };
 }

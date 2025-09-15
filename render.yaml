@@ -23,3 +23,17 @@ services:
         value: .
       - key: TZ
         value: Asia/Tokyo
+
+  - type: cron
+    name: cleanup-expired-pins
+    env: python
+    buildCommand: pip install -r requirements.txt
+    schedule: "*/5 * * * *"  # 5分おきに実行
+    startCommand: python manage.py cleanup_expired_pins
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: motitasu.settings.production
+      - key: PYTHONPATH
+        value: .
+      - key: TZ
+        value: Asia/Tokyo
