@@ -110,7 +110,6 @@ def clock_action(request):
     
     return redirect('timeclock')
 
-@login_required
 def get_current_time(request):
     jst = ZoneInfo(settings.TIME_ZONE)
     now_jst = timezone.now().astimezone(jst)
