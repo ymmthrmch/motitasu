@@ -1,39 +1,55 @@
+databases:
+  - name: motitasudb
+    plan: free
+    databaseName: motitasu
+    user: motitasu
+    region: singapore
+
 services:
   - type: web
+    plan: free
     name: motitasu
-    env: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: python manage.py runserver 0.0.0.0:$PORT
+    runtime: python
+    region: singapore
+    branch: main
+    healthCheckPath: /
+    buildCommand: './build.sh'
+    startCommand: 'python -m gunicorn poegrass.asgi:application -k uvicorn.workers.UvicornWorker'
     envVars:
-      - key: DJANGO_SETTINGS_MODULE
-        value: motitasu.settings.production
-      - key: PYTHONPATH
-        value: .
+      - key: DATABASE_URL
+        fromDatabase:
+          name: motitasudb
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: WEB_CONCURRENCY
+        value: 4
+    autoDeploy: true
 
-  - type: cron
-    name: daily-paid-leave-grants
-    env: python
-    buildCommand: pip install -r requirements.txt
-    schedule: "0 15 * * *"  # 毎日午前0時（JST）に実行（UTC 15時）
-    startCommand: python manage.py process_daily_paid_leave_grants
-    envVars:
-      - key: DJANGO_SETTINGS_MODULE
-        value: motitasu.settings.production
-      - key: PYTHONPATH
-        value: .
-      - key: TZ
-        value: Asia/Tokyo
+  # - type: cron
+  #   name: daily-paid-leave-grants
+  #   env: python
+  #   buildCommand: pip install -r requirements.txt
+  #   schedule: "0 15 * * *"  # 毎日午前0時（JST）に実行（UTC 15時）
+  #   startCommand: python manage.py process_daily_paid_leave_grants
+  #   envVars:
+  #     - key: DJANGO_SETTINGS_MODULE
+  #       value: motitasu.settings.production
+  #     - key: PYTHONPATH
+  #       value: .
+  #     - key: TZ
+  #       value: Asia/Tokyo
 
-  - type: cron
-    name: cleanup-expired-pins
-    env: python
-    buildCommand: pip install -r requirements.txt
-    schedule: "*/5 * * * *"  # 5分おきに実行
-    startCommand: python manage.py cleanup_expired_pins
-    envVars:
-      - key: DJANGO_SETTINGS_MODULE
-        value: motitasu.settings.production
-      - key: PYTHONPATH
-        value: .
-      - key: TZ
-        value: Asia/Tokyo
+  # - type: cron
+  #   name: cleanup-expired-pins
+  #   env: python
+  #   buildCommand: pip install -r requirements.txt
+  #   schedule: "*/5 * * * *"  # 5分おきに実行
+  #   startCommand: python manage.py cleanup_expired_pins
+  #   envVars:
+  #     - key: DJANGO_SETTINGS_MODULE
+  #       value: motitasu.settings.production
+  #     - key: PYTHONPATH
+  #       value: .
+  #     - key: TZ
+  #       value: Asia/Tokyo
