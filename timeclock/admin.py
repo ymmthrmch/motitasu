@@ -5,7 +5,7 @@ from .models import TimeRecord, MonthlyTarget, PaidLeaveRecord
 class TimeRecordAdmin(admin.ModelAdmin):
     list_display = ['user', 'clock_type', 'timestamp', 'created_at']
     list_filter = ['clock_type', 'timestamp', 'user']
-    search_fields = ['user__username', 'user__email']
+    search_fields = ['user__name', 'user__email']
     date_hierarchy = 'timestamp'
     ordering = ['-timestamp']
 

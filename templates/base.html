@@ -39,6 +39,11 @@
                             <i class="bi bi-bar-chart"></i>ダッシュボード
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'leaderboard:leaderboard' %}">
+                            <i class="bi bi-trophy"></i>ランキング
+                        </a>
+                    </li>
                     <li class="nav-item d-flex align-items-center">
                         <span class="navbar-text me-3">
                             <i class="bi bi-person-circle"></i>{{ user.name }}さん

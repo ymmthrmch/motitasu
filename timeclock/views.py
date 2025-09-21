@@ -108,7 +108,7 @@ def clock_action(request):
     except Exception as e:
         messages.error(request, '打刻に失敗しました。')
     
-    return redirect('timeclock')
+    return redirect('timeclock:timeclock')
 
 def get_current_time(request):
     jst = ZoneInfo(settings.TIME_ZONE)

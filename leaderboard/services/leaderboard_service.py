@@ -45,7 +45,7 @@ class LeaderboardService:
         try:
             entry = LeaderboardEntry.objects.get(
                 user=user,
-                years=year,
+                year=year,
                 month=month
             )
         except LeaderboardEntry.DoesNotExist:
@@ -117,7 +117,7 @@ class LeaderboardService:
         try:
             # 指定年月の全エントリを労働時間の降順で取得
             all_entries = LeaderboardEntry.objects.filter(
-                years=year,
+                year=year,
                 month=month
             ).order_by('-total_minutes')
             
@@ -158,13 +158,13 @@ class LeaderboardService:
         try:
             entry = LeaderboardEntry.objects.get(
                 user=user,
-                years=year,
+                year=year,
                 month=month
             )
             
             # 参加者総数を取得
             total_participants = LeaderboardEntry.objects.filter(
-                years=year,
+                year=year,
                 month=month
             ).count()
             

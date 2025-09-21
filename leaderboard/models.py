@@ -11,24 +11,23 @@ class LeaderboardEntry(models.Model):
     month = models.PositiveIntegerField()
     joined_at = models.DateTimeField(auto_now_add=True)
 
-    total_minutes = models.DecimalField(
-        max_digits=6, decimal_places=2, default=0
-    )
-    rank = models.IntegerField(null=True, blank=True)
+    total_minutes = models.PositiveIntegerField(default=0)
+    rank = models.PositiveIntegerField(null=True, blank=True)
     last_updated = models.DateTimeField(auto_now=True)
 
     cached_daily_minutes = models.JSONField(
         default=dict, blank=True,
         help_text="{'1': 480, '2': 420, ...} 形式で保存"
     )
-    rank = models.PositiveIntegerField(null=True, blank=True)
 
     class Meta:
         unique_together = ('user', 'year', 'month')
-        ordering = ['rank', '-total_hours']
+        ordering = ['rank', '-total_minutes']
         indexes = [
             models.Index(fields=['user', 'year', 'month']),
         ]
+        verbose_name = 'ランキングエントリ'
+        verbose_name_plural = 'ランキングエントリ'
 
     def clean(self):
         super().clean()
@@ -36,7 +35,7 @@ class LeaderboardEntry(models.Model):
             raise ValidationError('月は1から12の間でなければなりません。')
 
     def __str__(self):
-        return f"{self.user.username} - {self.year}/{self.month} - Rank: {self.rank}"
+        return f"{self.user.name} - {self.year}/{self.month} - Rank: {self.rank}"
     
     @property
     def total_hours_display(self):

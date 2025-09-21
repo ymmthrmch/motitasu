@@ -154,6 +154,11 @@ function showError(message) {
     showNotification(message, 'error');
 }
 
+//
+function showInfo(message) {
+    showNotification(message, 'info');
+}
+
 // 通知を表示
 function showNotification(message, type) {
     // 既存の通知があれば削除
@@ -214,3 +219,5 @@ function updateCharacterCounter(textarea, counter, submitBtn = null, maxLength =
         submitBtn.disabled = currentLength === 0 || currentLength > maxLength;
     }
 }
+
+// api関連
