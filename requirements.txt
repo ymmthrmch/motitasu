@@ -5,6 +5,7 @@ dj-database-url
 dj-static
 gunicorn
 psycopg2-binary
+python-dateutil==2.9.0.post0
 python-decouple
 python-dotenv==1.1.1
 pytz==2025.2
