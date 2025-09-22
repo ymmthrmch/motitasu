@@ -75,6 +75,18 @@ body {
     background: rgba(255, 255, 255, 0.2);
 }
 
+/* ドロップダウンメニュー内のログアウトボタン */
+.dropdown-item.text-danger:hover,
+.dropdown-item.text-danger:focus {
+    background-color: #dc3545 !important;
+    color: white !important;
+}
+
+.dropdown-item.text-danger:active {
+    background-color: #c82333 !important;
+    color: white !important;
+}
+
 /* メインコンテンツ */
 main {
     padding-top: 1.0rem;

@@ -121,10 +121,22 @@ class LeaderboardService:
                 month=month
             ).order_by('-total_minutes')
             
-            # ランキングを更新
-            for index, entry in enumerate(all_entries, start=1):
-                entry.rank = index
+            # 同順位処理を実装したランキング更新
+            current_rank = 1
+            previous_minutes = None
+            
+            for index, entry in enumerate(all_entries):
+                # 前の人と同じ労働時間の場合は同じ順位
+                if previous_minutes is not None and entry.total_minutes == previous_minutes:
+                    # 同じ順位を保持
+                    pass
+                else:
+                    # 新しい順位を設定（現在のインデックス + 1）
+                    current_rank = index + 1
+                
+                entry.rank = current_rank
                 entry.save(update_fields=['rank'])
+                previous_minutes = entry.total_minutes
 
             return {
                 'success':True,

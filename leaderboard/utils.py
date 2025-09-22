@@ -57,7 +57,7 @@ def check_join_period(year, month, now):
                is_join_period: 参加期間内かどうか
     """
     is_current_month = year == now.year and month == now.month
-    is_join_period = is_current_month and 1 <= now.day <= 10
+    is_join_period = is_current_month and 1 <= now.day <= 25
     return is_current_month, is_join_period
 
 

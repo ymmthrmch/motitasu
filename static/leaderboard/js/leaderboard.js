@@ -50,6 +50,13 @@ function injectSpinnerStyles() {
 
 // ランキング参加処理
 async function handleJoin() {
+    // 参加確認ダイアログを表示
+    const confirmMessage = 'ランキングに参加しますか？\n\n参加すると今月の労働時間が他の参加者に公開されます。\n一度参加すると取り消すことはできません。';
+    
+    if (!confirm(confirmMessage)) {
+        return; // ユーザーがキャンセルした場合は処理を中断
+    }
+
     setButtonLoading(this, true);
 
     const start = Date.now();
@@ -78,7 +85,7 @@ async function handleJoin() {
     }
 }
 
-// 労働時間更新処理
+// ランキング更新処理
 async function handleUpdate() {
     setButtonLoading(this, true);
 
@@ -95,7 +102,7 @@ async function handleUpdate() {
         }
 
         if (data.success) {
-            showSuccess('労働時間を更新しました！');
+            showSuccess('ランキングを更新しました！');
             setTimeout(() => location.reload(), 1000);
         } else {
             handleApiError(data);

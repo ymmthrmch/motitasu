@@ -59,6 +59,7 @@ def leaderboard(request):
 @login_required
 @require_POST
 def join(request):
+    user = request.user
     now = get_jst_now()
     
     # 年月パラメーターを取得
@@ -76,7 +77,7 @@ def join(request):
 
     try:
         entry, created = LeaderboardEntry.objects.get_or_create(
-            user=request.user,
+            user=user,
             year=year,
             month=month
         )
@@ -87,6 +88,10 @@ def join(request):
         ))
     
     if created:
+        service = LeaderboardService(user)
+        service.update_user_stats(year=year, month=month)
+        service.update_leaderboard(year=year, month=month)
+        
         return JsonResponse(format_leaderboard_success(
             'joined',
             'ランキングに参加しました',
