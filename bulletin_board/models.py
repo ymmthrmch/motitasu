@@ -22,6 +22,11 @@ class Message(models.Model):
         max_length=200,
         help_text='メッセージ内容を入力してください（最大200文字）'
     )
+    show_name = models.BooleanField(
+        verbose_name='名前を表示',
+        default=False,
+        help_text='チェックすると名前を表示して投稿します（基本は匿名）'
+    )
     is_pinned = models.BooleanField(
         verbose_name='ピン留め',
         default=False,

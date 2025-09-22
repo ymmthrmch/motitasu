@@ -21,7 +21,11 @@
             <!-- カードヘッダー -->
             <div class="memo-header">
                 <div>
-                    <div class="memo-author">{{ message.user.name }}</div>
+                    <div class="memo-author">
+                        {% if message.show_name %}
+                            {{ message.user.name }}
+                        {% endif %}
+                    </div>
                     <div class="memo-date">{{ message.created_at|date:"n月d日" }}</div>
                 </div>
                 {% if message.user == user %}
@@ -165,6 +169,13 @@
                         maxlength="200" 
                         required
                         id="modalTextarea"></textarea>
+                    
+                    <div class="form-check mt-3">
+                        <input class="form-check-input" type="checkbox" name="show_name" id="showNameCheck">
+                        <label class="form-check-label small text-muted" for="showNameCheck">
+                            名前を表示する
+                        </label>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <div class="draft-indicator" id="draftIndicator" style="display: none;">

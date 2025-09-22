@@ -15,8 +15,14 @@ def message_list(request):
     if request.method == 'POST':
         # メッセージ投稿処理
         content = request.POST.get('content', '').strip()
+        show_name = request.POST.get('show_name') == 'on'  # チェックボックスの値
+        
         if content:
-            Message.objects.create(user=request.user, content=content)
+            Message.objects.create(
+                user=request.user, 
+                content=content,
+                show_name=show_name
+            )
             messages.success(request, 'メッセージを投稿しました。')
         else:
             messages.error(request, 'メッセージ内容を入力してください。')

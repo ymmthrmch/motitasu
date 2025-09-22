@@ -13,3 +13,4 @@ python manage.py migrate
 
 # Create superuser if needed
 python manage.py superuser
+python manage.py create_demo_data
