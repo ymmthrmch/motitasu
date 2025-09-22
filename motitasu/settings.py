@@ -144,6 +144,35 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Custom User Model
 AUTH_USER_MODEL = 'accounts.User'
 
+# ログ設定
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'filters': {
+        'skip_health_checks': {
+            '()': 'django.utils.log.CallbackFilter',
+            'callback': lambda record: '/health/' not in record.getMessage()
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'filters': ['skip_health_checks'],
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+    },
+    'loggers': {
+        'django.server': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}
+
 # Login URLs
 LOGIN_URL = 'accounts:login'
 LOGIN_REDIRECT_URL = 'home'

@@ -177,20 +177,30 @@ def dashboard(request):
     
     all_time_stats = get_all_time_stats(request.user)
     
-    # 有給休暇情報を取得
-    balance_manager = PaidLeaveBalanceManager(request.user)
-    paid_leave_balance_info = balance_manager.get_detailed_balance_info()
-    
-    # 次回の有給付与予定を計算
-    calculator = PaidLeaveCalculator(request.user)
-    next_grant_info = calculator.get_next_grant_info()
-
-    # dataclassを辞書に変換してから結合
+    # 有給休暇情報を取得（入社日が設定されている場合のみ）
     paid_leave_status = {}
-    if paid_leave_balance_info:
-        paid_leave_status.update(asdict(paid_leave_balance_info))
-    if next_grant_info:
-        paid_leave_status.update(asdict(next_grant_info))
+    
+    if request.user.hire_date:
+        try:
+            balance_manager = PaidLeaveBalanceManager(request.user)
+            paid_leave_balance_info = balance_manager.get_detailed_balance_info()
+            
+            # 次回の有給付与予定を計算
+            calculator = PaidLeaveCalculator(request.user)
+            next_grant_info = calculator.get_next_grant_info()
+
+            # dataclassを辞書に変換してから結合
+            if paid_leave_balance_info:
+                paid_leave_status.update(asdict(paid_leave_balance_info))
+            if next_grant_info:
+                paid_leave_status.update(asdict(next_grant_info))
+            
+            paid_leave_status['hire_date_missing'] = False
+        except Exception:
+            # 有給休暇計算でエラーが発生した場合
+            paid_leave_status['hire_date_missing'] = True
+    else:
+        paid_leave_status['hire_date_missing'] = True
     
     context = {
         'year': year,
