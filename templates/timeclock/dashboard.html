@@ -154,6 +154,26 @@
                     <h5>有給休暇</h5>
                 </div>
                 <div class="card-body">
+                    {% if paid_leave_status.hire_date_missing %}
+                    <!-- 入社日未設定の場合 -->
+                    <div class="alert alert-warning text-center mb-3">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <div class="mt-2">
+                            <strong>入社日が未設定です</strong>
+                        </div>
+                        <div class="small mt-1">
+                            有給休暇情報を表示するには入社日の設定が必要です
+                        </div>
+                    </div>
+                    <div class="stats-row">
+                        <div class="label">有給休暇残日数:</div>
+                        <div class="value">--</div>
+                    </div>
+                    <div class="stats-row">
+                        <div class="label">失効間近:</div>
+                        <div class="value">--</div>
+                    </div>
+                    {% else %}
                     <!-- 付与条件達成状況 -->
                     <div class="mb-3">
                     {% if paid_leave_status.remaining_attendance_needed == 0 %}
@@ -188,6 +208,7 @@
                             {% endif %}
                         </div>
                     </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -239,10 +260,6 @@
         </div>
     </div>
 
-<!-- アクションボタン -->
-    <div class="action-buttons">
-        <a href="{% url 'timeclock:timeclock' %}" class="btn btn-primary">打刻画面へ</a>
-    </div>
 </div>
 {% endblock %}
 
