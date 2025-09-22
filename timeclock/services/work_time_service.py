@@ -226,3 +226,4 @@ class WorkTimeService:
             return f"{hours}時間{minutes}分"
         else:
             return f"{minutes}分"
+        

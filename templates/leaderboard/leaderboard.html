@@ -1,0 +1,197 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}ランキング{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'leaderboard/css/leaderboard.css' %}?v={% now 'U' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+        <h1 class="page-title">
+            <i class="bi bi-trophy"></i> 労働時間ランキング
+        </h1>
+
+    <!-- メインコンテンツ -->
+    <div class="leaderboard-content">
+        <!-- 月選択ナビゲーション -->
+        <div class="card-base mb-4">
+            <div class="card-header-primary">
+                <div class="d-flex justify-content-between align-items-center">
+                    {% if prev_month %}
+                    <a href="?year={{ prev_month.year }}&month={{ prev_month.month }}" class="btn btn-outline-light btn-sm">
+                        <i class="bi bi-chevron-left"></i> {{ prev_month.month }}月
+                    </a>
+                    {% else %}
+                    <div></div>
+                    {% endif %}
+
+                    <div class="d-flex align-items-center">
+                        <h5 class="mb-0 me-3">{{ year }}年 {{ month }}月</h5>
+                        {% if joined and is_current_month%}
+                            <span class="status-indicator status-success">
+                                参加中
+                            </span>
+                        {% elif is_join_period %}
+                            <span class="status-indicator status-warning">
+                                受付中
+                            </span>
+                        {% elif is_current_month %}
+                            <span class="status-indicator status-danger">
+                                受付終了
+                            </span>
+                        {% elif not current_month %}
+                            <span class="status-indicator status-danger">
+                                期間終了
+                            </span>
+                        {% endif %}
+                    </div>
+
+                    {% if next_month and not is_current_month %}
+                    <a href="?year={{ next_month.year }}&month={{ next_month.month }}" class="btn btn-outline-light btn-sm">
+                        {{ next_month.month }}月 <i class="bi bi-chevron-right"></i>
+                    </a>
+                    {% else %}
+                    <div></div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+
+        <!-- 参加状態別表示 -->
+        <section class="participation-section">
+            {% if not joined and is_join_period %}
+                <!-- 参加可能期間 -->
+                <div class="card-base text-center">
+                    <div class="card-body-standard">
+                        <i class="bi bi-trophy-fill text-warning" style="font-size: 4rem; margin-bottom: 1rem;"></i>
+                        <h2 style="font-size: 1.8rem; font-weight: 600; margin-bottom: 1rem;">ランキングに参加しませんか？</h2>
+                        <p style="font-size: 1.1rem; color: #6c757d; margin-bottom: 2rem;">
+                            {{ month }}月の労働時間ランキングへの参加を受け付けています。<br>
+                            参加期間は毎月1日〜10日です。
+                        </p>
+                        <button id="joinBtn" class="btn-gradient-primary btn-lg">
+                            <i class="bi bi-trophy"></i> ランキングに参加する
+                        </button>
+                        <div class="mt-3">
+                            <small class="text-muted">
+                                <i class="bi bi-info-circle"></i> 参加すると今月の労働時間が、ランキング参加者に公開されます。参加は取り消せません。
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+            {% elif not joined %}
+                <!-- 参加期間外 -->
+                <div class="card-base text-center">
+                    <div class="card-body-standard">
+                        <i class="bi bi-calendar-x text-muted" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                        <h3>{{ month }}月のランキング参加期間は終了しました</h3>
+                        <p class="text-muted">
+                            ランキング参加の受付は毎月1日〜10日です。<br>
+                            {% if is_current_month %}
+                            来月のランキングをお楽しみに！
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            {% endif %}
+        </section>
+
+        <!-- ランキング表示 -->
+        {% if joined and all_entries %}
+        <section class="ranking-section">
+            <div class="card-base">
+                <div class="card-header-primary">
+                    <h5 class="mb-0">
+                        <i class="bi bi-list-ol"></i> {% if is_current_month %}ランキング{% else %}最終結果{% endif %}
+                        {% if all_entries.count > 0 %}
+                        <span class="badge bg-light text-dark ms-2">{{ all_entries.count }}人参加</span>
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if all_entries %}
+                        <div class="ranking-list {% if all_entries.count > 5%}scrollable{% endif %}">
+                            {% for ranking_entry in all_entries %}
+                            <div class="ranking-item {% if ranking_entry.user == user %}current-user{% endif %} {% if ranking_entry.rank <= 3 %}rank-{{ ranking_entry.rank }}{% endif %}">
+                                <div class="rank-info">
+                                    <div class="rank-number">
+                                        {% if ranking_entry.rank == 1 %}
+                                            <div class="rank-medal gold">
+                                                <i class="bi bi-trophy-fill"></i>
+                                                <span class="rank-position">1st</span>
+                                            </div>
+                                        {% elif ranking_entry.rank == 2 %}
+                                            <div class="rank-medal silver">
+                                                <i class="bi bi-trophy-fill"></i>
+                                                <span class="rank-position">2nd</span>
+                                            </div>
+                                        {% elif ranking_entry.rank == 3 %}
+                                            <div class="rank-medal bronze">
+                                                <i class="bi bi-trophy-fill"></i>
+                                                <span class="rank-position">3rd</span>
+                                            </div>
+                                        {% else %}
+                                            <span class="rank-text">{{ ranking_entry.rank }}</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="user-info">
+                                        <div class="user-name">
+                                            {{ ranking_entry.user.name }}
+                                            {% if ranking_entry.user == user %}
+                                            <span class="badge bg-primary ms-2">あなた</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="work-time-display">
+                                    <span class="work-time">{{ ranking_entry.total_hours_display }}</span>
+                                    <span class="work-minutes text-muted">({{ ranking_entry.total_minutes }}分)</span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center p-4">
+                            <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
+                            <p class="text-muted mt-3">まだ参加者がいません</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+        {% endif %}
+
+        <!-- アクションエリア -->
+        {% if joined and is_current_month %}
+        <section class="action-section text-center mt-4">
+            <button id="updateBtn" class="btn-gradient-info">
+                <i class="bi bi-arrow-repeat"></i> ランキングを更新
+            </button>
+        </section>
+        {% endif %}
+    </div>
+
+    <!-- 説明セクション -->
+    <aside class="info-section">
+        <div class="card-base mt-4">
+            <div class="card-body-standard">
+                <h6><i class="bi bi-info-circle"></i> ランキングについて</h6>
+                <ul style="padding-left: 1.5rem; margin-bottom: 0;">
+                    <li style="margin-bottom: 0.5rem;">毎月1日〜10日の期間中にランキングに参加できます</li>
+                    <li style="margin-bottom: 0.5rem;">労働時間の合計でランキングが決まります</li>
+                    <li style="margin-bottom: 0.5rem;">参加後は「ランキングを更新」ボタンで最新の記録に更新できます</li>
+                    <li>ランキングは参加者全体で自動更新されます</li>
+                </ul>
+            </div>
+        </div>
+    </aside>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'leaderboard/js/leaderboard.js' %}?v={% now 'U' %}"></script>
+{% endblock %}

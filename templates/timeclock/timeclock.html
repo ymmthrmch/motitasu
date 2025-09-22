@@ -18,13 +18,21 @@
         {% if last_record %}
         <div class="mt-3">
             {% if last_record.clock_type == 'clock_in' %}
-            <span class="status-badge badge-working">勤務中</span>
+            <span class="status-indicator status-success">
+                勤務中
+            </span>
             {% elif last_record.clock_type == 'break_start' %}
-            <span class="status-badge badge-break">休憩中</span>
+            <span class="status-indicator status-info">
+                休憩中
+            </span>
             {% elif last_record.clock_type == 'break_end' %}
-            <span class="status-badge badge-working">勤務中</span>
+            <span class="status-indicator status-success">
+                勤務中
+            </span>
             {% elif last_record.clock_type == 'clock_out' %}
-            <span class="status-badge badge-finished">退勤済み</span>
+            <span class="status-indicator status-danger">
+                退勤済み
+            </span>
             {% endif %}
         </div>
         {% endif %}

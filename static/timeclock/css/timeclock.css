@@ -21,28 +21,6 @@
     margin: 1rem 0;
 }
 
-.status-badge {
-    display: inline-block;
-    padding: 0.25rem 3.75rem;
-    border-radius: 20px;
-    font-size: 0.85rem;
-    font-weight: bold;
-}
-
-.badge-break {
-    background: #d4edda;
-    color: #155724;
-}
-
-.badge-working {
-    background: #cce5ff;
-    color: #004085;
-}
-
-.badge-finished {
-    background: #f8d7da;
-    color: #721c24;
-}
 
 .clock-buttons {
     display: grid;
