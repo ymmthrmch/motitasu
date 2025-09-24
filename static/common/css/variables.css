@@ -4,7 +4,7 @@
     /* メイングラデーション */
     --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     --progress-gradient: linear-gradient(90deg, #74b9ff, #0984e3, #00b894);
-    --success-gradient: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    --success-gradient: linear-gradient(135deg, #3dd871 0%, #34eecc 100%);
     --warning-gradient: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 50%, #fd79a8 100%);
     --danger-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
     --info-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);

@@ -28,7 +28,7 @@
                     </div>
                     <div class="memo-date">{{ message.created_at|date:"n月d日" }}</div>
                 </div>
-                {% if message.user == user %}
+                {% if message.user == user or user.is_staff %}
                 <div class="memo-menu">
                     <button class="menu-toggle" type="button" onclick="toggleDropdown(this)">
                         <i class="bi bi-three-dots"></i>
@@ -152,7 +152,7 @@
 
 <!-- 投稿モーダル -->
 {% if user.is_authenticated %}
-<div class="modal fade post-modal" id="postModal" tabindex="-1" aria-labelledby="postModalLabel" aria-hidden="true">
+<div class="modal fade modal-common" id="postModal" tabindex="-1" aria-labelledby="postModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">

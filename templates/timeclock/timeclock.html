@@ -5,6 +5,7 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'timeclock/css/timeclock.css' %}?v={% now 'U' %}">
+<link rel="stylesheet" href="{% static 'bulletin_board/css/bulletin_board.css' %}?v={% now 'U' %}">
 {% endblock %}
 
 {% block content %}
@@ -41,12 +42,10 @@
     {% if messages %}
     <div class="mb-3">
         {% for message in messages %}
-        {% if 'work_summary' not in message.tags %}
         <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
             {{ message }}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
-        {% endif %}
         {% endfor %}
     </div>
     {% endif %}
@@ -95,6 +94,16 @@
                         </div>
                     </div>
                 </div>
+                {% endif %}
+
+                {% if work_summary.leaderboard %}
+                <div class="summary-item leaderboard-rank">
+                    <span class="summary-label">
+                        現在の順位
+                    </span>
+                    <span class="summary-value">{{ work_summary.leaderboard.rank }}位 / {{ work_summary.leaderboard.all_entries }}人</span>
+                </div>
+                {% endif %}
 
                 <div class="summary-item dashboard-link-item">
                     <a href="{% url 'timeclock:dashboard' %}" class="btn btn-primary view-dashboard-btn">
@@ -102,7 +111,24 @@
                         詳細なダッシュボードを見る
                     </a>
                 </div>
-                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- 投稿提案カード -->
+    <div class="mb-3">
+        <div class="card-base">
+            <div class="card-header-success">
+                <h5><i class="bi bi-pencil-square"></i> 今日のエピソードを共有</h5>
+            </div>
+            <div class="card-body-standard text-center">
+                <p class="mb-3">
+                    業務連絡やお客様からの感謝の言葉、仲間のファインプレーを共有しましょう！
+                </p>
+                <button type="button" class="btn-gradient-success" id="showPostModalFromTimeclock">
+                    <i class="bi bi-pencil-square"></i>
+                    伝言を投稿
+                </button>
             </div>
         </div>
     </div>
@@ -161,9 +187,52 @@
     {% endif %}
 </div>
 
+<!-- 投稿モーダル -->
+{% if user.is_authenticated %}
+<div class="modal fade post-modal" id="postModal" tabindex="-1" aria-labelledby="postModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="postModalLabel"><i class="bi bi-pencil-square"></i> 新しいメッセージ</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
+            </div>
+            <form method="post" action="{% url 'bulletin_board:message_list' %}" id="modalMessageForm">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <textarea 
+                        name="content" 
+                        class="modal-textarea" 
+                        placeholder="メッセージを入力してください..." 
+                        maxlength="200" 
+                        required
+                        id="modalTextarea"></textarea>
+                    
+                    <div class="form-check mt-3">
+                        <input class="form-check-input" type="checkbox" name="show_name" id="showNameCheck">
+                        <label class="form-check-label small text-muted" for="showNameCheck">
+                            名前を表示する
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <div class="draft-indicator" id="draftIndicator" style="display: none;">
+                        <span>下書きが復元されました</span>
+                    </div>
+                    <div class="modal-char-counter" id="modalCharCounter">0/200文字</div>
+                    <button type="submit" class="modal-submit-btn" id="modalSubmitBtn">
+                        <i class="bi bi-pencil-square"></i> 投稿する
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <input type="hidden" id="currentTimeUrl" value="{% url 'timeclock:get_current_time' %}">
 {% endblock %}
 
 {% block extra_js %}
 <script src="{% static 'timeclock/js/timeclock.js' %}?v={% now 'U' %}"></script>
+<script src="{% static 'bulletin_board/js/bulletin_board.js' %}?v={% now 'U' %}"></script>
 {% endblock %}

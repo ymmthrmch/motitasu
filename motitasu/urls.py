@@ -24,6 +24,7 @@ urlpatterns = [
     path('timeclock/', include('timeclock.urls')),
     path('bulletin/', include('bulletin_board.urls')),
     path('leaderboard/',include('leaderboard.urls')),
+    path('salary/', include('salary.urls')),
     path('admin/', admin.site.urls),
     path('health/', views.health, name='health'),
 ]

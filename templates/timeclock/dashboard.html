@@ -5,79 +5,12 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'timeclock/css/dashboard.css' %}?v={% now 'U' %}">
+<link rel="stylesheet" href="{% static 'timeclock/css/skill-modal.css' %}?v={% now 'U' %}">
 {% endblock %}
 
 {% block content %}
 <div class="container my-4">
     <h1 class="page-title"><i class="bi bi-bar-chart"></i> 勤務ダッシュボード</h1>
-
-    <!-- カレンダー -->
-    <div class="summary-card calendar-card mb-4">
-        <div class="card-header">
-            <h5>カレンダー</h5>
-        </div>
-        <div class="card-body">
-            <div class="calendar-nav-container">
-                <div class="calendar-nav">
-                {% if prev_month %}
-                <a href="?year={{ prev_month.year }}&month={{ prev_month.month }}" class="nav-arrow"><i class="bi bi-chevron-left"></i></a>
-                {% else %}
-                <span class="nav-arrow disabled"><i class="bi bi-chevron-left"></i></span>
-                {% endif %}
-
-                <h3 class="calendar-title">{{ year }}年 {{ month }}月</h3>
-
-                {% if next_month %}
-                <a href="?year={{ next_month.year }}&month={{ next_month.month }}" class="nav-arrow"><i class="bi bi-chevron-right"></i></a>
-                {% else %}
-                <span class="nav-arrow disabled"><i class="bi bi-chevron-right"></i></span>
-                {% endif %}
-            </div>
-
-                {% if next_month %}
-                <a href="?year={% now 'Y' %}&month={% now 'n' %}" class="btn btn-sm btn-outline-primary">
-                    <i class="bi bi-calendar-check"></i> 今月へ
-                </a>
-                {% endif %}
-            </div>
-
-            <table class="calendar-table">
-            <thead>
-                <tr>
-                    {% for day in weekdays %}
-                    <th class="{% if forloop.last %}sunday{% elif forloop.counter == 6 %}saturday{% endif %}">{{ day }}
-                    </th>
-                    {% endfor %}
-                </tr>
-            </thead>
-            <tbody>
-                {% for week in calendar_weeks %}
-                <tr>
-                    {% for day_data in week %}
-                    {% if day_data %}
-                    <td
-                        class="calendar-day {% if day_data.is_today %}today{% endif %} {% if day_data.has_data %}has-data{% endif %}">
-                        <div class="day-number">{{ day_data.day }}</div>
-                        {% if day_data.has_data %}
-                        <div class="day-info">
-                            <div class="work-hours">{{ day_data.work_hours }}h</div>
-                            <div class="wage">{{ day_data.wage|floatformat:0 }}円</div>
-                            {% if not day_data.has_clock_out %}
-                            <div class="working-badge">勤務中</div>
-                            {% endif %}
-                        </div>
-                        {% endif %}
-                    </td>
-                    {% else %}
-                    <td class="calendar-day empty"></td>
-                    {% endif %}
-                    {% endfor %}
-                </tr>
-                {% endfor %}
-            </tbody>
-            </table>
-        </div>
-    </div>
 
     <!-- 月次サマリーカード -->
     <div class="row mb-3">
@@ -228,41 +161,254 @@
                             <div class="badge-name">{{ badge.name }}</div>
                         </div>
                         {% endfor %}
-                        {% else %}
-                        <div class="no-badges">まだ獲得したバッチはありません。</div>
-                        {% endif %}
                     </div>
+                    {% else %}
+                    <div class="no-badges">まだ獲得したバッチはありません。</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 給与・スキル情報 -->
+    {% if salary_skill_info %}
+    <div class="row mb-3">
+        <!-- 現在の給与グレード -->
+        <div class="col-lg-6 col-md-6 mb-3">
+            <div class="summary-card salary-grade">
+                <div class="card-header">
+                    <h5><i class="bi bi-star-fill"></i> 現在のグレード</h5>
+                </div>
+                <div class="card-body">
+                    {% if salary_skill_info.has_salary_grade and salary_skill_info.current_grade_info %}
+                    <div class="main-info animate-value text-primary">{{ salary_skill_info.current_grade_info.name }}</div>
+                    <div class="stats-row">
+                        <span class="label">レベル:</span>
+                        <span class="value">{{ salary_skill_info.current_grade_info.level }}</span>
+                    </div>
+                    <div class="stats-row">
+                        <span class="label">時給:</span>
+                        <span class="value">{{ salary_skill_info.current_grade_info.hourly_wage }}円</span>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning text-center">
+                        <i class="bi bi-exclamation-triangle fs-1 mb-3 d-block"></i>
+                        <h6>給与グレード未設定</h6>
+                        <p class="mb-0">管理者にお問い合わせください。</p>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
 
-        <div class="col-lg-12 col-md-12 mb-3">
-            <div class="summary-card">
+        <!-- 習得済みスキル -->
+        <div class="col-lg-6 col-md-6 mb-3">
+            <div class="summary-card skills-summary">
                 <div class="card-header">
-                    <h5>スキルステップ</h5>
+                    <h5><i class="bi bi-patch-check-fill"></i> 習得スキル</h5>
                 </div>
                 <div class="card-body">
-                    {% if badges %}
-                    <div class="badges-container">
-                        {% for badge in badges %}
-                        <div class="badge-item" data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-placement="top"
-                            data-bs-title="{{ badge.description }}">
-                            <img src="{{ badge.image_url }}" alt="{{ badge.name }}" class="badge-image">
-                            <div class="badge-name">{{ badge.name }}</div>
+                    {% if salary_skill_info.acquired_skills %}
+                    <div class="d-flex mb-2 flex-wrap gap-2">
+                        {% for skill_info in salary_skill_info.acquired_skills %}
+                        <div class="skill-badge skill-badge-acquired skill-badge-{{ skill_info.skill.category }} skill-detail-btn" 
+                             data-skill-id="{{ skill_info.skill.id }}"
+                             data-bs-toggle="tooltip" 
+                             data-bs-placement="top"
+                             data-bs-title="習得日: {{ skill_info.acquired_date }}">
+                            <div class="skill-badge-icon">
+                                <i class="bi bi-award-fill"></i>
+                            </div>
+                            <div class="skill-badge-content">
+                                <div class="skill-badge-name">{{ skill_info.skill.name }}</div>
+                                <div class="skill-badge-status">習得済み</div>
+                            </div>
                         </div>
                         {% endfor %}
-                        {% else %}
-                        <div class="no-badges">まだ獲得したバッチはありません。</div>
-                        {% endif %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-3 text-muted">
+                        <i class="bi bi-info-circle mb-2 d-block fs-4"></i>
+                        <small>まだ習得したスキルはありません</small>
+                    </div>
+                    {% endif %}
+                    <div class="stats-row">
+                        <span class="label">習得したスキル:</span>
+                        <span class="value animate-value">{{ salary_skill_info.acquired_skills|length }}個</span>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
+    {% if salary_skill_info.has_salary_grade and salary_skill_info.current_grade_info %}
+    <!-- 昇進ルート -->
+    <div class="summary-card mb-4">
+        <div class="card-header">
+            <h5><i class="bi bi-stair-up"></i>昇進ルート</h5>
+        </div>
+        <div class="card-body">
+            <!-- 昇進ルート -->
+            {% if salary_skill_info.promotion_paths %}
+            <div class="mb-4">
+                {% for path in salary_skill_info.promotion_paths %}
+                <div class="promotion-route-area mb-3">
+                    <div class="promotion-route-header">
+                        <div class="d-flex align-items-center">
+                            <h6 class="mb-0 text-primary">{{ path.grade.name }}</h6>
+                        </div>
+                        <div class="promotion-route-info">
+                            <div class="info-item">
+                                <span class="info-label">レベル:</span>
+                                <span class="info-value">{{ path.grade.level }}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">時給:</span>
+                                <span class="info-value">{{ path.grade.hourly_wage }}円</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">達成率:</span>
+                                <span class="info-value animate-value">{{ path.completion_rate|floatformat:0 }}%</span>
+                            </div>
+                        </div>
+                        <!-- プログレスバー -->
+                        <div class="progress-container">
+                            <div class="progress-bar" data-achievement="{{ path.completion_rate }}"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="promotion-route-skills">
+                        <div class="skills-label mb-2">
+                            <i class="bi bi-list-check me-1"></i>
+                            <small class="text-muted">必要スキル ({{ path.acquired_count }}/{{ path.required_count }})</small>
+                        </div>
+                        <div class="d-flex flex-wrap gap-2">
+                            {% for skill_status in path.skill_status %}
+                            <div class="skill-badge skill-badge-{{ skill_status.status }} skill-badge-{{ skill_status.skill.category }} skill-detail-btn"
+                                 data-skill-id="{{ skill_status.skill.id }}"
+                                 data-bs-toggle="tooltip" 
+                                 data-bs-placement="top"
+                                 data-bs-title="{% if skill_status.acquired %}習得済み{% elif skill_status.pending %}申告中{% else %}未習得{% endif %}">
+                                <div class="skill-badge-icon skill-badge-icon-small">
+                                    <i class="bi bi-{% if skill_status.acquired %}award-fill{% elif skill_status.pending %}hourglass-split{% else %}circle{% endif %}"></i>
+                                </div>
+                                <div class="skill-badge-content">
+                                    <div class="skill-badge-name">{{ skill_status.skill.name }}</div>
+                                    <div class="skill-badge-status">{% if skill_status.acquired %}習得済み{% elif skill_status.pending %}申告中{% else %}未習得{% endif %}</div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- 申告中スキル -->
+            {% if salary_skill_info.skill_applications.pending %}
+            <div class="pending-skills-area">
+                <div class="d-flex align-items-center mb-3">
+                    <h6 class="mb-0">申告中スキル</h6>
+                    <span class="badge bg-warning ms-2">{{ salary_skill_info.skill_applications.pending|length }}</span>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    {% for app in salary_skill_info.skill_applications.pending %}
+                    <div class="skill-badge skill-badge-pending skill-badge-{{ app.skill.category }} skill-detail-btn"
+                         data-skill-id="{{ app.skill.id }}"
+                         data-bs-toggle="tooltip" 
+                         data-bs-placement="top"
+                         data-bs-title="申告日: {{ app.application_date|date:'n月d日' }}">
+                        <div class="skill-badge-icon skill-badge-icon-small">
+                            <i class="bi bi-hourglass-split"></i>
+                        </div>
+                        <div class="skill-badge-content">
+                            <div class="skill-badge-name">{{ app.skill.name }}</div>
+                            <div class="skill-badge-status">申告中</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    {% endif %}
+
+    <!-- カレンダー -->
+    <div class="summary-card calendar-card mb-4">
+        <div class="card-header">
+            <h5>カレンダー</h5>
+        </div>
+        <div class="card-body">
+            <div class="calendar-nav-container">
+                <div class="calendar-nav">
+                {% if prev_month %}
+                <a href="?year={{ prev_month.year }}&month={{ prev_month.month }}" class="nav-arrow"><i class="bi bi-chevron-left"></i></a>
+                {% else %}
+                <span class="nav-arrow disabled"><i class="bi bi-chevron-left"></i></span>
+                {% endif %}
+
+                <h3 class="calendar-title">{{ year }}年 {{ month }}月</h3>
+
+                {% if next_month %}
+                <a href="?year={{ next_month.year }}&month={{ next_month.month }}" class="nav-arrow"><i class="bi bi-chevron-right"></i></a>
+                {% else %}
+                <span class="nav-arrow disabled"><i class="bi bi-chevron-right"></i></span>
+                {% endif %}
+            </div>
+
+                {% if next_month %}
+                <a href="?year={% now 'Y' %}&month={% now 'n' %}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-calendar-check"></i> 今月へ
+                </a>
+                {% endif %}
+            </div>
+
+            <table class="calendar-table">
+            <thead>
+                <tr>
+                    {% for day in weekdays %}
+                    <th class="{% if forloop.last %}sunday{% elif forloop.counter == 6 %}saturday{% endif %}">{{ day }}
+                    </th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for week in calendar_weeks %}
+                <tr>
+                    {% for day_data in week %}
+                    {% if day_data %}
+                    <td
+                        class="calendar-day {% if day_data.is_today %}today{% endif %} {% if day_data.has_data %}has-data{% endif %}">
+                        <div class="day-number">{{ day_data.day }}</div>
+                        {% if day_data.has_data %}
+                        <div class="day-info">
+                            <div class="work-hours">{{ day_data.work_hours }}h</div>
+                            <div class="wage">{{ day_data.wage|floatformat:0 }}円</div>
+                            {% if not day_data.has_clock_out %}
+                            <div class="working-badge">勤務中</div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </td>
+                    {% else %}
+                    <td class="calendar-day empty"></td>
+                    {% endif %}
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+            </table>
+        </div>
+    </div>
 </div>
+
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'common/js/utils.js' %}?v={% now 'U' %}"></script>
 <script src="{% static 'timeclock/js/dashboard.js' %}?v={% now 'U' %}"></script>
+<script src="{% static 'timeclock/js/salary_skill.js' %}?v={% now 'U' %}"></script>
 {% endblock %}

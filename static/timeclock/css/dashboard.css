@@ -272,3 +272,212 @@
     margin-bottom: 1rem;
     opacity: 0.5;
 }
+
+/* スキルバッジスタイル */
+.skill-badge {
+    display: inline-flex;
+    align-items: center;
+    background: white;
+    border-radius: 20px;
+    padding: 8px 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border: 2px solid transparent;
+    min-height: 50px;
+}
+
+.skill-badge:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+.skill-badge-icon {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 10px;
+    font-size: 18px;
+}
+
+.skill-badge-icon-small {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+}
+
+.skill-badge-content {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.skill-badge-name {
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 1.2;
+    color: #2c3e50;
+}
+
+.skill-badge-status {
+    font-size: 11px;
+    color: #7f8c8d;
+    line-height: 1;
+    margin-top: 2px;
+}
+
+/* 習得済みスキルバッジ */
+.skill-badge-acquired {
+    background: linear-gradient(135deg, #e8f5e8 0%, #f0f8f0 100%);
+    border-color: #27ae60;
+}
+
+.skill-badge-acquired .skill-badge-icon {
+    background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+    color: white;
+}
+
+.skill-badge-acquired:hover {
+    border-color: #27ae60;
+    background: linear-gradient(135deg, #d5eddb 0%, #e8f5e8 100%);
+}
+
+/* 申告中スキルバッジ */
+.skill-badge-pending {
+    background: linear-gradient(135deg, #fff3cd 0%, #fef9e7 100%);
+    border-color: #f39c12;
+}
+
+.skill-badge-pending .skill-badge-icon {
+    background: linear-gradient(135deg, #f39c12 0%, #f1c40f 100%);
+    color: white;
+}
+
+.skill-badge-pending:hover {
+    border-color: #f39c12;
+    background: linear-gradient(135deg, #ffeaa7 0%, #fff3cd 100%);
+}
+
+/* 未習得スキルバッジ */
+.skill-badge-required {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-color: #6c757d;
+}
+
+.skill-badge-required .skill-badge-icon {
+    background: linear-gradient(135deg, #6c757d 0%, #868e96 100%);
+    color: white;
+}
+
+.skill-badge-required:hover {
+    border-color: #495057;
+    background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+}
+
+/* 昇進ルート領域スタイル */
+.promotion-route-area {
+    background: linear-gradient(135deg, #f8f9ff 0%, #fbfcff 100%);
+    border: 2px solid #b9c2eeff;
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.promotion-route-header {
+    margin-bottom: 1rem;
+}
+
+.promotion-route-header h6 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #667eea;
+    margin-bottom: 0.5rem;
+}
+
+.promotion-route-info {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 0.5rem;
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.info-label {
+    color: #636e72;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.info-value {
+    color: #2d3436;
+    font-weight: 600;
+}
+
+.promotion-route-skills {
+    border-top: 1px solid #e9ecef;
+    padding-top: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.skills-label {
+    display: flex;
+    align-items: center;
+}
+
+/* 申告中スキル領域スタイル */
+.pending-skills-area {
+    background: linear-gradient(135deg, #fff8e1 0%, #fffbf0 100%);
+    border: 2px solid #f9d56aff;
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-top: 1rem;
+    transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.pending-skills-area h6 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #f39c12;
+    margin-bottom: 0.5rem;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+    .skill-badge {
+        padding: 6px 12px;
+        min-height: 42px;
+    }
+    
+    .skill-badge-icon {
+        width: 30px;
+        height: 30px;
+        font-size: 16px;
+        margin-right: 8px;
+    }
+    
+    .skill-badge-name {
+        font-size: 13px;
+    }
+    
+    .skill-badge-status {
+        font-size: 10px;
+    }
+    
+    .promotion-route-area,
+    .pending-skills-area {
+        padding: 1rem;
+    }
+    
+    .promotion-route-info {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+}

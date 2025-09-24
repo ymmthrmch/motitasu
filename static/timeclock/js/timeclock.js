@@ -92,4 +92,13 @@ document.addEventListener('DOMContentLoaded', function () {
             confirmClockAction(event, actionType, actionNames[actionType]);
         });
     });
+    
+    // timeclockから投稿モーダルを開くためのイベントリスナー
+    const showPostModalBtn = document.getElementById('showPostModalFromTimeclock');
+    if (showPostModalBtn) {
+        showPostModalBtn.addEventListener('click', function() {
+            const postModal = new bootstrap.Modal(document.getElementById('postModal'));
+            postModal.show();
+        });
+    }
 });

@@ -49,7 +49,8 @@ INSTALLED_APPS = [
     'accounts',
     'timeclock',
     'bulletin_board',
-    'leaderboard'
+    'leaderboard',
+    'salary'
 ]
 
 MIDDLEWARE = [

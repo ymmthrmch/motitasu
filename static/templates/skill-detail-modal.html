@@ -1,0 +1,41 @@
+<div class="modal fade modal-common" tabindex="-1" aria-labelledby="skillDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <!-- ヘッダー -->
+            <div class="modal-header">
+                <h5 class="modal-title" id="skillDetailModalLabel">
+                    {{skill_name}}
+                </h5>
+                <span class="badge bg-light text-primary ms-2">{{skill_category}}</span>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
+            </div>
+            
+            <!-- ボディ -->
+            <div class="modal-body">
+                <!-- スキル説明 -->
+                <div class="skill-description-section mb-4">
+                    <h6 class="skill-section-title text-muted mb-2">
+                        <i class="bi bi-info-circle me-2"></i>スキル詳細
+                    </h6>
+                    <div class="skill-description-content bg-light p-3 rounded">
+                        {{skill_description}}
+                    </div>
+                </div>
+
+                <!-- 習得者一覧 -->
+                <div class="skill-holders-section mb-4">
+                    <h6 class="skill-section-title text-muted mb-3">
+                        <i class="bi bi-people-fill me-2"></i>習得者一覧（{{holders_count}}人）
+                    </h6>
+                    <div class="skill-holders-content">
+                        {{holders_html}}
+                    </div>
+                </div>
+                <!-- スキル申告フォーム -->
+                <div class="skill-application-section w-100">
+                    {{action_form}}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

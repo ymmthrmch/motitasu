@@ -219,3 +219,17 @@ class User(AbstractBaseUser, PermissionsMixin):
             return False
         
         return target_date_str in self.paid_leave_grant_schedule
+    
+    @property
+    def current_salary_grade(self):
+        """現在の給与グレード（最新のUserSalaryGradeから取得）"""
+        latest_grade = self.salary_history.order_by('-effective_date').first()
+        return latest_grade.salary_grade if latest_grade else None
+    
+    @property
+    def current_hourly_wage(self):
+        """現在の時給（給与グレードから取得、必須）"""
+        current_grade = self.current_salary_grade
+        if current_grade:
+            return current_grade.hourly_wage
+        raise ValueError(f"ユーザー {self.name} の給与グレードが設定されていません")

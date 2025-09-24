@@ -14,6 +14,9 @@ from .models import TimeRecord
 from .services import WorkTimeService
 from .services.paid_leave_calculator import PaidLeaveCalculator
 from .services.paid_leave_balance_manager import PaidLeaveBalanceManager
+from leaderboard.models import LeaderboardEntry
+from leaderboard.services.leaderboard_service import LeaderboardService
+from salary.services.salary_skill_service import SalarySkillService
 
 @login_required
 def timeclock(request):
@@ -60,6 +63,18 @@ def timeclock(request):
                 'total_wage': monthly_summary['total_wage'],
                 'target_income': monthly_summary['target_income'],
             }
+            
+            try:
+                year = now_jst.year
+                month = now_jst.month
+                entry = LeaderboardEntry.objects.get(user=request.user, year=year, month=month)
+                all_entries = LeaderboardEntry.objects.filter(year=year, month=month)
+                work_summary['leaderboard'] = {
+                    'rank': entry.rank,
+                    'all_entries': len(all_entries)
+                    }
+            except LeaderboardEntry.DoesNotExist:
+                pass
     
     context = {
         'today_records': today_records,
@@ -75,6 +90,7 @@ def timeclock(request):
 @require_POST
 def clock_action(request):
     action_type = request.POST.get('action_type')
+    user = request.user
     
     if not action_type:
         messages.error(request, '打刻タイプが指定されていません。')
@@ -92,7 +108,7 @@ def clock_action(request):
             timestamp = timezone.now().astimezone(jst)
             
             record = TimeRecord(
-                user=request.user,
+                user=user,
                 clock_type=action_type,
                 timestamp=timestamp
             )
@@ -102,11 +118,24 @@ def clock_action(request):
             # シグナルを再有効化
             handle_time_record_save._disabled = False
             handle_time_record_delete._disabled = False
+
+        if action_type == 'clock_out':
+            try:
+                year = timestamp.year
+                month = timestamp.month
+                entry = LeaderboardEntry.objects.get(user=user, year=year, month=month)
+                service = LeaderboardService(user)
+                service.update_user_stats(year, month)
+                service.update_leaderboard(year, month)
+            except LeaderboardEntry.DoesNotExist:
+                pass
+            except Exception:
+                pass
             
     except ValidationError as e:
         messages.error(request, str(e.message if hasattr(e, 'message') else e.messages[0]))
-    except Exception as e:
-        messages.error(request, '打刻に失敗しました。')
+    except Exception:
+        messages.error(request, '打刻に失敗しました')
     
     return redirect('timeclock:timeclock')
 
@@ -201,6 +230,10 @@ def dashboard(request):
     else:
         paid_leave_status['hire_date_missing'] = True
     
+    # 給与・スキル情報を取得
+    salary_skill_service = SalarySkillService(request.user)
+    salary_skill_info = salary_skill_service.get_dashboard_info()
+    
     context = {
         'year': year,
         'month': month,
@@ -210,7 +243,8 @@ def dashboard(request):
         'next_month': next_month,
         'all_time_stats': all_time_stats,
         'weekdays': ['月', '火', '水', '木', '金', '土', '日'],
-        'paid_leave_status': paid_leave_status
+        'paid_leave_status': paid_leave_status,
+        'salary_skill_info': salary_skill_info
     }
     
     return render(request, 'timeclock/dashboard.html', context)

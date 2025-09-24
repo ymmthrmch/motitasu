@@ -1,0 +1,179 @@
+/* スキル詳細モーダル専用CSS */
+
+/* === モーダル構造の調整 === */
+/* modal-footerを使わずにmodal-bodyで下部の角を丸くする */
+.modal-common .modal-body {
+    border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg);
+}
+
+/* === セクション共通スタイル === */
+.skill-section-title {
+    font-size: 1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+}
+
+.skill-section-title i {
+    font-size: 1.2rem;
+}
+
+/* === スキル説明セクション === */
+.skill-description-section {
+    border-left: 4px solid #667eea;
+    padding-left: 1rem;
+}
+
+.skill-description-content {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    border: 1px solid rgba(102, 126, 234, 0.2);
+    transition: all 0.3s ease;
+}
+
+/* === 習得者一覧セクション === */
+.skill-holders-section {
+    border-left: 4px solid #28a745;
+    padding-left: 1rem;
+}
+
+.skill-holders-content {
+    background: #f8fafb;
+    border-radius: 8px;
+    padding: 1rem;
+    border: 1px solid rgba(40, 167, 69, 0.2);
+    transition: all 0.3s ease;
+}
+
+.skill-holders-content i {
+    
+    font-size: 1.2rem;
+}
+
+/* 習得者がいない場合のスタイル */
+.skill-holders-content .text-center.py-3 {
+    background: #e9ecef;
+    border: 2px dashed #dee2e6;
+    color: #6c757d;
+    font-style: italic;
+}
+
+/* === スキル申告セクション === */
+.skill-application-section {
+    border-left: 4px solid #ffc107;
+    padding-left: 1rem;
+}
+
+/* 申告フォーム */
+.skill-application-section .application-form {
+    background: #fefefe;
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 1px solid rgba(225, 170, 7, 0.2);
+    transition: all 0.3s ease;
+}
+
+.skill-application-section .application-form h6 {
+    color: #856404;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+/* 申告中状態 */
+.skill-application-section .application-status {
+    background: #fffef8;
+    border-radius: 12px;
+    padding: 2rem;
+    border: 2px solid rgba(255, 193, 7, 0.2);
+    text-align: center;
+}
+
+.skill-application-section .application-status .status-indicator {
+    font-size: 1.1rem;
+    padding: 1rem 2rem;
+    border-radius: 25px;
+    box-shadow: 0 3px 8px rgba(255, 193, 7, 0.2);
+    transform: scale(1.05);
+}
+
+/* 習得済み状態 */
+.skill-application-section .acquisition-status {
+    background: linear-gradient(135deg, #d4edda 0%, #ffffff 100%);
+    border-radius: 12px;
+    padding: 2rem;
+    border: 2px solid rgba(40, 167, 69, 0.3);
+    text-align: center;
+}
+
+.skill-application-section .acquisition-status .status-indicator {
+    font-size: 1.1rem;
+    padding: 1rem 2rem;
+    border-radius: 25px;
+    box-shadow: 0 3px 8px rgba(40, 167, 69, 0.2);
+}
+
+/* === フォーム要素のスタイリング === */
+.skill-application-section .modal-textarea {
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+}
+
+.skill-application-section .modal-char-counter {
+    font-size: 0.8rem;
+    color: #6c757d;
+    text-align: right;
+    margin-top: 0.5rem;
+}
+
+.skill-application-section .modal-submit-btn {
+    background: linear-gradient(135deg, #ffe492 0%, #fcd14f 40%, #ffc517 100%);
+    border: none;
+    padding: 0.75rem 2rem;
+    border-radius: 25px;
+    font-weight: 600;
+    color: #ffffff;
+    transition: all 0.3s ease;
+    box-shadow: 0 3px 8px rgba(255, 193, 7, 0.3);
+}
+
+.skill-application-section .modal-submit-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 197, 23, 0.5);
+    background: linear-gradient(135deg, #fcd14f 0%, #ffb700 40%, #ff9800 100%);
+}
+
+.skill-application-section .modal-submit-btn:active {
+    transform: translateY(0);
+}
+
+/* === レスポンシブ対応 === */
+@media (max-width: 768px) {
+    .skill-description-section,
+    .skill-holders-section,
+    .skill-application-section {
+        border-left-width: 3px;
+        padding-left: 0.75rem;
+    }
+    
+    .skill-section-title {
+        font-size: 0.9rem;
+    }
+    
+    .skill-description-content,
+    .skill-holders-content {
+        padding: 0.75rem;
+    }
+    
+    .skill-application-section .application-form,
+    .skill-application-section .application-status,
+    .skill-application-section .acquisition-status {
+        padding: 1rem;
+    }
+    
+    .skill-application-section .modal-submit-btn {
+        padding: 0.6rem 1.5rem;
+        font-size: 0.9rem;
+    }
+}

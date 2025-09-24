@@ -114,18 +114,6 @@ function addLongPressListener(element, callback, duration = 500) {
     });
 }
 
-/**
- * テンプレート文字列の変数を置換
- * @param {string} template - テンプレート文字列（例: "{{ name }}さん、こんにちは"）
- * @param {object} data - 置換するデータ（例: {name: "太郎"}）
- * @returns {string} 置換後の文字列
- */
-function replaceTemplate(template, data) {
-    return template.replace(/\{\{\s*(\w+)\s*\}\}/g, (match, key) => {
-        return data.hasOwnProperty(key) ? data[key] : match;
-    });
-}
-
 // HTMLエスケープ
 function escapeHtml(text) {
     const map = {
@@ -217,6 +205,124 @@ function updateCharacterCounter(textarea, counter, submitBtn = null, maxLength =
     // 送信ボタンの状態更新（ボタンが指定されている場合）
     if (submitBtn) {
         submitBtn.disabled = currentLength === 0 || currentLength > maxLength;
+    }
+}
+
+/**
+ * HTMLファイルからテンプレートを読み込んでデータを置換
+ * @param {string} templatePath - テンプレートファイルのパス
+ * @param {Object} data - 置換するデータオブジェクト
+ * @returns {Promise<string>} 置換後のHTML文字列
+ */
+async function renderModalTemplateFromFile(templatePath, data) {
+    try {
+        const response = await fetch(templatePath);
+        if (!response.ok) {
+            throw new Error(`Template file not found: ${templatePath}`);
+        }
+        
+        let html = await response.text();
+        
+        // {{変数名}}形式で変数を置換
+        Object.keys(data).forEach(key => {
+            const regex = new RegExp(`{{${key}}}`, 'g');
+            const value = data[key] !== null && data[key] !== undefined ? data[key] : '';
+            
+            // HTMLコンテンツとして扱う変数（エスケープしない）
+            const htmlFields = ['holders_html', 'action_button', 'action_form'];
+            const processedValue = htmlFields.includes(key) ? String(value) : escapeHtml(String(value));
+            
+            html = html.replace(regex, processedValue);
+        });
+        
+        return html;
+    } catch (error) {
+        console.error('Template loading failed:', error);
+        throw error;
+    }
+}
+
+/**
+ * 後方互換性のための関数（既存のコードで使用）
+ * @param {string} templateSelector - テンプレート要素のセレクタ
+ * @param {Object} data - 置換するデータオブジェクト
+ * @returns {string} 置換後のHTML文字列
+ */
+function renderModalTemplate(templateSelector, data) {
+    const templateElement = document.querySelector(templateSelector);
+    if (!templateElement) {
+        throw new Error(`Template element not found: ${templateSelector}`);
+    }
+    
+    let html = templateElement.innerHTML;
+    
+    // {{変数名}}形式で変数を置換
+    Object.keys(data).forEach(key => {
+        const regex = new RegExp(`{{${key}}}`, 'g');
+        const value = data[key] !== null && data[key] !== undefined ? data[key] : '';
+        
+        // HTMLコンテンツとして扱う変数（エスケープしない）
+        const htmlFields = ['holders_html', 'action_button', 'action_form'];
+        const processedValue = htmlFields.includes(key) ? String(value) : escapeHtml(String(value));
+        
+        html = html.replace(regex, processedValue);
+    });
+    
+    return html;
+}
+
+/**
+ * ファイルからテンプレートを読み込んでモーダルを表示
+ * @param {string} templatePath - テンプレートファイルのパス
+ * @param {Object} data - 置換するデータオブジェクト
+ */
+async function showModalFromFile(templatePath, data) {
+    try {
+        const modalHtml = await renderModalTemplateFromFile(templatePath, data);
+        
+        // body直下に追加
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = modalHtml;
+        document.body.appendChild(tempDiv.firstElementChild);
+        
+        const modal = document.body.lastElementChild;
+        if (modal && modal.classList.contains('modal')) {
+            const bsModal = new bootstrap.Modal(modal);
+            bsModal.show();
+            
+            // モーダルが閉じられたときに要素を削除
+            modal.addEventListener('hidden.bs.modal', () => {
+                modal.remove();
+            });
+        }
+    } catch (error) {
+        console.error('Modal creation failed:', error);
+        showError('モーダルの表示に失敗しました。');
+    }
+}
+
+/**
+ * テンプレートからモーダルを生成して表示（既存コード用）
+ * @param {string} templateSelector - テンプレート要素のセレクタ
+ * @param {Object} data - 置換するデータオブジェクト
+ */
+function showModalFromTemplate(templateSelector, data) {
+    const modalHtml = renderModalTemplate(templateSelector, data);
+    
+    // body直下に追加
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = modalHtml;
+    document.body.appendChild(tempDiv.firstElementChild);
+    
+    const modal = document.body.lastElementChild;
+    if (modal && modal.classList.contains('modal')) {
+        const bsModal = new bootstrap.Modal(modal);
+        bsModal.show();
+        
+        // モーダルが閉じられたときに要素を削除
+        modal.addEventListener('hidden.bs.modal', () => {
+            modal.remove();
+        });
     }
 }
 
