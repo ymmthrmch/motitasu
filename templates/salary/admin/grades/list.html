@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}給与グレード管理 - Motitasu{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'salary/css/admin.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- パンくずリスト -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'salary:admin_dashboard' %}">
+                    <i class="bi bi-speedometer2"></i> 管理ダッシュボード
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">
+                <i class="bi bi-cash-stack"></i> 給与グレード管理
+            </li>
+        </ol>
+    </nav>
+
+    <!-- ヘッダー -->
+    <div class="text-center mb-4">
+        <h2 class="page-title">
+            <i class="bi bi-cash-stack"></i>給与グレード管理
+        </h2>
+        <div class="mt-2">
+            <span class="status-indicator status-info">
+                {{ grades|length }}個のグレード
+            </span>
+        </div>
+    </div>
+
+    <!-- 新規作成ボタン -->
+    <div class="mb-4 text-end">
+        <a href="{% url 'salary:admin_grade_create' %}" class="btn-gradient-primary">
+            <i class="bi bi-plus-lg"></i> 新しいグレードを作成
+        </a>
+    </div>
+
+    {% if grades %}
+    <!-- グレード一覧 -->
+    <div class="card-base">
+        <div class="p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th width="5%">レベル</th>
+                            <th width="20%">グレード名</th>
+                            <th width="10%">時給</th>
+                            <th width="25%">必要スキル</th>
+                            <th width="15%">昇進先</th>
+                            <th width="10%">所属者数</th>
+                            <th width="15%">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for grade in grades %}
+                        <tr class="clickable-row" onclick="location.href='{% url "salary:admin_grade_detail" grade.id %}';"  style="cursor: pointer;">
+                            <td>
+                                <div class="text-center">
+                                    <span class="status-indicator status-info">
+                                        {{ grade.level }}
+                                    </span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="fw-semibold">{{ grade.name }}</div>
+                                {% if grade.description %}
+                                    <small class="text-muted">{{ grade.description|truncatechars:30 }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="fw-semibold text-success">¥{{ grade.hourly_wage|floatformat:0 }}</span>
+                            </td>
+                            <td>
+                                {% if grade.required_skills.exists %}
+                                    <div class="skills-list">
+                                        {% for skill in grade.required_skills.all|slice:":3" %}
+                                            <span class="status-indicator status-warning me-1 mb-1">{{ skill.name }}</span>
+                                        {% endfor %}
+                                        {% if grade.required_skills.count > 3 %}
+                                            <small class="text-muted">他{{ grade.required_skills.count|add:"-3" }}個</small>
+                                        {% endif %}
+                                    </div>
+                                {% else %}
+                                    <span class="text-muted">なし</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if grade.next_possible_grades.exists %}
+                                    <div class="promotion-targets">
+                                        {% for next_grade in grade.next_possible_grades.all|slice:":2" %}
+                                            <span class="status-indicator status-success me-1 mb-1">
+                                                {{ next_grade.name }}
+                                            </span>
+                                        {% endfor %}
+                                        {% if grade.next_possible_grades.count > 2 %}
+                                            <small class="text-muted">他{{ grade.next_possible_grades.count|add:"-2" }}個</small>
+                                        {% endif %}
+                                    </div>
+                                {% else %}
+                                    <span class="text-muted">最上位</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="text-center">
+                                    {% if grade.members_count > 0 %}
+                                        <span class="status-indicator status-success">
+                                            <i class="bi bi-people"></i> {{ grade.members_count }}人
+                                        </span>
+                                    {% else %}
+                                        <span class="text-muted">
+                                            <i class="bi bi-dash"></i> 0人
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex gap-1 align-items-center" onclick="event.stopPropagation();">
+                                    <a href="{% url 'salary:admin_grade_edit' grade.id %}" 
+                                       class="btn-gradient-primary btn-sm" style="width: 70px;">
+                                        <i class="bi bi-pencil"></i>編集
+                                    </a>
+                                    <button type="button" 
+                                            class="btn-gradient-danger btn-sm delete-grade-btn"
+                                            data-grade-id="{{ grade.id }}"
+                                            data-grade-name="{{ grade.name|escapejs }}"
+                                            data-members-count="{{ grade.members_count }}"
+                                            style="width: 70px;">
+                                        <i class="bi bi-trash me-2"></i>削除
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    {% else %}
+    <!-- 空状態 -->
+    <div class="card-base">
+        <div class="card-body-standard text-center py-5">
+            <i class="bi bi-cash-stack text-muted" style="font-size: 4rem;"></i>
+            <h4 class="mt-3 mb-2">まだグレードがありません</h4>
+            <p class="text-muted mb-4">新しい給与グレードを作成して管理を開始しましょう。</p>
+            <a href="{% url 'salary:admin_grade_create' %}" class="btn-gradient-primary">
+                <i class="bi bi-plus-lg"></i> 最初のグレードを作成
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- 削除確認モーダル -->
+<div class="modal fade modal-common" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">グレード削除確認</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="deleteModalBody">
+                <!-- 動的に内容が設定されます -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn-gradient-danger" id="confirmDeleteBtn">削除</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'salary/js/admin-grades.js' %}"></script>
+{% endblock %}

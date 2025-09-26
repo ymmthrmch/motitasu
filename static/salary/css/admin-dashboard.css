@@ -1,0 +1,260 @@
+/* 管理ダッシュボード専用CSS */
+
+.card-base {
+    height: 100%;
+}
+
+/* === スキル・グレードマップ === */
+.skills-map, .grades-map {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+/* スキル・グレードマップリンク */
+.skill-map-link, .grade-map-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    margin-bottom: var(--spacing-lg);
+}
+
+.skill-map-item, .grade-map-item {
+    background: var(--bg-secondary);
+    border: 1px solid #e9ecef;
+    border-radius: var(--border-radius-sm);
+    padding: var(--spacing-md);
+    margin-bottom: 0;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.skill-map-link:hover .skill-map-item,
+.skill-map-item:hover {
+    background: linear-gradient(135deg, #f8f9ff 0%, #e8f0ff 100%);
+    border-color: #667eea;
+    text-decoration: none;
+    color: inherit;
+}
+
+.grade-map-link:hover .grade-map-item,
+.grade-map-item:hover {
+    background: linear-gradient(135deg, #f0fff4 0%, #dcf5e1 100%);
+    border-color: #28a745;
+    text-decoration: none;
+    color: inherit;
+}
+
+.skill-map-link:hover,
+.grade-map-link:hover {
+    text-decoration: none;
+    color: inherit;
+}
+
+.skill-map-link:last-child, .grade-map-link:last-child {
+    margin-bottom: 0;
+}
+
+/* === スキルマップ専用 === */
+.skill-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-sm);
+}
+
+.skill-name {
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+    font-size: var(--font-size-lg);
+    text-decoration: none;
+}
+
+.skill-category {
+    margin-bottom: var(--spacing-sm);
+}
+
+.holders-avatars {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+.more-holders {
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--border-radius-lg);
+    border: 1px solid #dee2e6;
+}
+
+.skill-actions {
+    text-align: right;
+}
+
+/* === グレードマップ専用 === */
+.grade-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--spacing-md);
+}
+
+.grade-info {
+    flex: 1;
+}
+
+.grade-name {
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+    font-size: var(--font-size-lg);
+    margin-bottom: 0.25rem;
+}
+
+.grade-level {
+    font-size: var(--font-size-sm);
+}
+
+.grade-stats {
+    text-align: right;
+}
+
+.grade-wage {
+    margin-top: 0.25rem;
+    font-weight: var(--font-weight-semibold);
+}
+
+.members-avatars {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin-bottom: var(--spacing-md);
+}
+
+.grade-actions {
+    text-align: right;
+}
+
+/* === 活動ログ === */
+.activity-log {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.activity-item {
+    display: flex;
+    align-items: flex-start;
+    padding: var(--spacing-md);
+    border-bottom: 1px solid #f8f9fa;
+    transition: var(--transition-standard);
+}
+
+.activity-item:hover {
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius-sm);
+}
+
+.activity-item:last-child {
+    border-bottom: none;
+}
+
+.activity-icon {
+    margin-right: var(--spacing-md);
+    font-size: 1.2rem;
+    width: 20px;
+    text-align: center;
+    margin-top: 0.1rem;
+}
+
+.activity-content {
+    flex: 1;
+}
+
+.activity-description {
+    color: var(--text-primary);
+    font-weight: var(--font-weight-medium);
+    margin-bottom: 0.25rem;
+}
+
+.activity-meta {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+}
+
+.activity-admin {
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+}
+
+.activity-time {
+    color: var(--text-muted);
+}
+
+.activity-target {
+    color: var(--text-secondary);
+}
+
+.activity-target a {
+    color: var(--color-primary);
+    font-weight: var(--font-weight-medium);
+}
+
+/* === クイックアクション === */
+.quick-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+}
+
+/* === 統計カード調整 === */
+.display-info {
+    font-size: 2.5rem;
+    font-weight: var(--font-weight-bold);
+    margin-bottom: var(--spacing-sm);
+}
+
+/* === レスポンシブ対応 === */
+@media (max-width: 768px) {
+    .skill-header, .grade-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-sm);
+    }
+    
+    .skill-actions, .grade-actions {
+        text-align: left;
+        width: 100%;
+    }
+    
+    .holders-avatars, .members-avatars {
+        justify-content: center;
+        margin: var(--spacing-sm) 0;
+    }
+    
+    .activity-item {
+        padding: var(--spacing-sm);
+    }
+    
+    .activity-meta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+    }
+    
+    .display-info {
+        font-size: 2rem;
+    }
+    
+    .quick-actions {
+        justify-content: center;
+    }
+    
+    .skills-map, .grades-map, .activity-log {
+        max-height: 300px;
+    }
+}

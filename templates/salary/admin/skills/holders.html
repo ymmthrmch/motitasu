@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ skill.name }}の習得者一覧 - Motitasu{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'salary/css/admin.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- パンくずリスト -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'salary:admin_dashboard' %}">
+                    <i class="bi bi-speedometer2"></i> 管理ダッシュボード
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'salary:admin_skills' %}">
+                    <i class="bi bi-award"></i> スキル管理
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">{{ skill.name }}の習得者</li>
+        </ol>
+    </nav>
+
+    <!-- ヘッダー -->
+    <div class="text-center mb-4">
+        <h2 class="page-title">
+            <i class="bi bi-people"></i>スキル習得者一覧
+        </h2>
+        <div class="mt-2">
+            <span class="status-indicator status-info me-2">{{ skill.name }}</span>
+            <span class="status-indicator status-success">
+                {{ holders|length }}人が習得済み
+            </span>
+        </div>
+    </div>
+
+    <!-- スキル情報カード -->
+    <div class="card-base mb-4">
+        <div class="card-header-primary">
+            <h5 class="mb-0">
+                <i class="bi bi-info-circle"></i> スキル情報
+            </h5>
+        </div>
+        <div class="card-body-standard">
+            <div class="row">
+                <div class="col-md-8">
+                    <h6 class="fw-semibold">{{ skill.name }}</h6>
+                    <p class="text-muted mb-3">{{ skill.description|default:"説明なし" }}</p>
+                    
+                    {% if skill.prerequisites.exists %}
+                        <div class="mb-2">
+                            <strong class="text-muted">前提スキル:</strong>
+                            {% for prereq in skill.prerequisites.all %}
+                                <span class="status-indicator status-info me-1">{{ prereq.name }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="mb-2">
+                        <span class="status-indicator status-info">{{ skill.get_category_display }}</span>
+                    </div>
+                    <a href="{% url 'salary:admin_skill_edit' skill.id %}" 
+                       class="btn-gradient-primary btn-sm">
+                        <i class="bi bi-pencil"></i> スキル編集
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if holders %}
+    <!-- 習得者一覧 -->
+    <div class="card-base">
+        <div class="p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th width="25%">習得者</th>
+                            <th width="15%">習得日</th>
+                            <th width="15%">承認者</th>
+                            <th width="20%">現在のグレード</th>
+                            <th width="25%">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for holder in holders %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <span class="user-avatar me-3">
+                                        {{ holder.user.name|first }}
+                                    </span>
+                                    <div>
+                                        <div class="fw-semibold">{{ holder.user.name }}</div>
+                                        <small class="text-muted">{{ holder.user.email }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div>{{ holder.acquired_date|date:"Y年n月j日" }}</div>
+                                <small class="text-muted">{{ holder.acquired_date|time:"H:i" }}</small>
+                            </td>
+                            <td>
+                                {% if holder.approved_by %}
+                                    <div class="fw-semibold">{{ holder.approved_by.name }}</div>
+                                    <small class="text-muted">管理者承認</small>
+                                {% else %}
+                                    <span class="text-muted">自動付与</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if holder.user.current_salary_grade %}
+                                    <span class="status-indicator status-success">
+                                        {{ holder.user.current_salary_grade.name }}
+                                    </span>
+                                    <small class="d-block text-muted">
+                                        ¥{{ holder.user.current_salary_grade.hourly_rate }}/時
+                                    </small>
+                                {% else %}
+                                    <span class="text-muted">グレード未設定</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="d-flex gap-2">
+                                    <a href="{% url 'salary:admin_user_detail' holder.user.id %}" 
+                                       class="btn-gradient-primary btn-sm">
+                                        <i class="bi bi-person-gear"></i> 管理
+                                    </a>
+                                    <button type="button" 
+                                            class="btn-gradient-danger btn-sm revoke-skill-btn"
+                                            data-user-id="{{ holder.user.id }}"
+                                            data-skill-id="{{ skill.id }}"
+                                            data-user-name="{{ holder.user.name|escapejs }}"
+                                            data-skill-name="{{ skill.name|escapejs }}">
+                                        <i class="bi bi-x-circle"></i> 取消
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    {% else %}
+    <!-- 空状態 -->
+    <div class="card-base">
+        <div class="card-body-standard text-center py-5">
+            <i class="bi bi-people text-muted" style="font-size: 4rem;"></i>
+            <h4 class="mt-3 mb-2">まだ習得者がいません</h4>
+            <p class="text-muted mb-4">このスキルはまだ誰も習得していません。</p>
+            <a href="{% url 'salary:admin_user_management' %}" class="btn-gradient-primary">
+                <i class="bi bi-person-plus"></i> ユーザー管理で手動付与
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 戻るボタン -->
+    <div class="text-center mt-4">
+        <a href="{% url 'salary:admin_skills' %}" class="btn-gradient-info">
+            <i class="bi bi-arrow-left"></i> スキル一覧に戻る
+        </a>
+    </div>
+</div>
+
+<!-- スキル取消確認モーダル -->
+<div class="modal fade modal-common" id="revokeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">スキル習得取消確認</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="revokeModalBody">
+                <!-- 動的に内容が設定されます -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn-gradient-danger" id="confirmRevokeBtn">取消実行</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'salary/js/admin-skill-holders.js' %}"></script>
+{% endblock %}

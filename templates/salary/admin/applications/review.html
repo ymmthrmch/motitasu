@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}申告審査 - {{ application.user.name }} - {{ application.skill.name }} - Motitasu{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'salary/css/admin.css' %}">
+<link rel="stylesheet" href="{% static 'salary/css/admin-review.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <!-- パンくずリスト -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'salary:admin_dashboard' %}">
+                    <i class="bi bi-speedometer2"></i> 管理ダッシュボード
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'salary:admin_applications' %}">
+                    <i class="bi bi-check-circle"></i> 申告承認
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">個別審査</li>
+        </ol>
+    </nav>
+
+    <!-- ヘッダー -->
+    <div class="text-center mb-4 position-relative">
+        <h2 class="page-title">
+            <i class="bi bi-search"></i>スキル習得申告の審査
+        </h2>
+        <a href="{% url 'salary:admin_applications' %}" 
+           class="btn-gradient-info text-decoration-none position-absolute top-50 end-0 translate-middle-y">
+            <i class="bi bi-arrow-left"></i> 一覧に戻る
+        </a>
+    </div>
+
+    <div class="row">
+        <!-- 申告詳細 -->
+        <div class="col-lg-8">
+            <div class="card-base mb-4">
+                <div class="card-header-primary">
+                    <h5 class="mb-0">
+                        <i class="bi bi-file-text"></i> 申告詳細
+                    </h5>
+                </div>
+                <div class="card-body-standard">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-2">申告者情報</h6>
+                            <div class="d-flex align-items-center mb-3">
+                                <span class="user-avatar me-3 large-avatar">
+                                    {{ application.user.name|first }}
+                                </span>
+                                <div>
+                                    <div class="h5 mb-1">{{ application.user.name }}</div>
+                                    <div class="text-muted">{{ application.user.email }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-2">申告スキル</h6>
+                            <div class="mb-2">
+                                <span class="h5">{{ application.skill.name }}</span>
+                                <span class="status-indicator status-info ms-2">{{ application.skill.get_category_display }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-2">申告日時</h6>
+                            <p class="mb-0">{{ application.application_date|date:"Y年n月j日 H:i" }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-2">申告ステータス</h6>
+                            <span class="status-indicator status-warning">{{ application.get_status_display }}</span>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <h6 class="text-muted mb-2">申告理由</h6>
+                    <div class="application-comment-display">
+                        {% if application.comment %}
+                            {{ application.comment|linebreaksbr }}
+                        {% else %}
+                            <em class="text-muted">申告理由が記載されていません。</em>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- 審査フォーム -->
+            <div class="card-base">
+                <div class="card-header-warning">
+                    <h5 class="mb-0">
+                        <i class="bi bi-clipboard-check"></i> 審査処理
+                    </h5>
+                </div>
+                <div class="card-body-standard">
+                    <form id="reviewForm" data-application-id="{{ application.id }}" 
+                          data-user-name="{{ application.user.name|escapejs }}" 
+                          data-skill-name="{{ application.skill.name|escapejs }}">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="reviewComment" class="form-label">処理コメント</label>
+                            <textarea class="form-control" id="reviewComment" name="comment" rows="4" 
+                                      placeholder="承認・却下の理由や補足事項を記載してください（任意）"></textarea>
+                            <div class="form-text">申告者への通知や記録のために使用されます。</div>
+                        </div>
+
+                        <div class="action-buttons">
+                            <button type="button" class="btn-gradient-success" id="approveBtn">
+                                <i class="bi bi-check-lg"></i> 承認する
+                            </button>
+                            <button type="button" class="btn-gradient-danger" id="rejectBtn">
+                                <i class="bi bi-x-lg"></i> 却下する
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- サイドバー -->
+        <div class="col-lg-4">
+            <!-- 申告対象スキルの詳細 -->
+            <div class="card-base mb-4">
+                <div class="card-header-info">
+                    <h6 class="mb-0">
+                        <i class="bi bi-info-circle"></i> 申告対象スキル詳細
+                    </h6>
+                </div>
+                <div class="card-body-standard">
+                    <div class="mb-3">
+                        <h4 class="mb-2">{{ application.skill.name }}</h6>
+                        <span class="status-indicator status-info mb-2 d-inline-block">
+                            {{ application.skill.get_category_display }}
+                        </span>
+                    </div>
+                    <div class="mb-3">
+                        <h6 class="text-muted mb-2 small">説明</h6>
+                        <p class="mb-3">
+                            {% if application.skill.description %}
+                                {{ application.skill.description }}
+                            {% else %}
+                                <em class="text-muted">説明が登録されていません。</em>
+                            {% endif %}
+                        </p>
+                    </div>
+                    
+                    <!-- 習得者一覧 -->
+                    <div>
+                        <h6 class="text-muted mb-2 small">習得者</h6>
+                        {% if skill_holders %}
+                            <div class="d-flex flex-wrap gap-2">
+                                {% for holder in skill_holders|slice:":8" %}
+                                <div class="holder-item">
+                                    <span class="user-avatar me-2">{{ holder.user.name|first }}</span>
+                                    <div class="holder-info">
+                                        <span class="holder-name">{{ holder.user.name }}</span>
+                                        <small class="holder-date">{{ holder.acquired_date|date:"Y/n/j" }}</small>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                                {% if skill_holders|length > 8 %}
+                                <div class="align-self-end ms-2 my-2">
+                                    <small class="text-muted">他{{ skill_holders|length|add:"-8" }}人</small>
+                                </div>
+                                {% endif %}
+                            </div>
+                        {% else %}
+                            <p class="mb-0 small text-muted">
+                                <em>まだ習得者はいません。</em>
+                            </p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 申告者の既存スキル -->
+            <div class="card-base mb-4">
+                <div class="card-header-primary">
+                    <h6 class="mb-0">
+                        <i class="bi bi-award"></i> {{ application.user.name }}さんの習得済みスキル
+                    </h6>
+                </div>
+                <div class="card-body-standard">
+                    {% if user_skills %}
+                        <div class="skill-list">
+                            {% for user_skill in user_skills %}
+                            <div class="skill-item">
+                                <div class="skill-info">
+                                    <span class="skill-name">{{ user_skill.skill.name }}</span>
+                                </div>
+                                <small class="text-muted">{{ user_skill.acquired_date|date:"Y/n/j" }}</small>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="empty-message">
+                            <em>まだ習得済みのスキルはありません。</em>
+                        </p>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- 確認モーダル -->
+<div class="modal fade modal-common" id="confirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmModalLabel">審査確認</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="confirmModalBody">
+                <!-- 動的に内容が設定されます -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn-gradient-primary" id="confirmActionBtn">実行</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 処理中モーダル -->
+<div class="modal fade" id="processingModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-body text-center py-4">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Processing...</span>
+                </div>
+                <div>処理中...</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'salary/js/admin-review.js' %}"></script>
+{% endblock %}

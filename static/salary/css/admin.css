@@ -1,0 +1,139 @@
+/* 管理者画面共通CSS */
+
+/* === ユーザーアバター === */
+.user-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-weight: 600;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+}
+
+/* === 申告承認画面 === */
+.application-row {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.application-row:hover {
+    background-color: rgba(0, 123, 255, 0.08);
+}
+
+.application-row:hover .user-avatar {
+    transform: scale(1.05);
+}
+
+.application-row.selected {
+    background-color: rgba(0, 123, 255, 0.1);
+}
+
+.application-comment {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* === チェックボックス選択状態 === */
+.application-checkbox:checked + * {
+    background-color: rgba(0, 123, 255, 0.1);
+}
+
+/* === 一括操作ボタン === */
+#bulkApproveBtn,
+#bulkRejectBtn {
+    padding: var(--spacing-sm) var(--spacing-lg);
+}
+
+#bulkApproveBtn:disabled,
+#bulkRejectBtn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* === 操作ボタン === */
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+/* 共通ボタンのスモールサイズ調整 */
+.btn-gradient-primary.btn-sm,
+.btn-gradient-success.btn-sm,
+.btn-gradient-danger.btn-sm,
+.btn-gradient-info.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+}
+
+/* 一括操作ボタンの無効化状態 */
+.btn-gradient-success:disabled,
+.btn-gradient-danger:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: var(--shadow-md);
+}
+
+.btn-gradient-success:disabled:hover,
+.btn-gradient-danger:disabled:hover {
+    transform: none;
+    box-shadow: var(--shadow-md);
+}
+
+/* === パンくずリスト === */
+.breadcrumb {
+    background-color: transparent;
+    padding: 0;
+    margin-bottom: 1rem;
+}
+
+.breadcrumb-item a {
+    text-decoration: none;
+    color: #6c757d;
+}
+
+.breadcrumb-item a:hover {
+    color: #495057;
+}
+
+.breadcrumb-item.active {
+    color: #495057;
+    font-weight: 500;
+}
+
+/* === 空状態 === */
+.empty-state {
+    padding: 4rem 2rem;
+    text-align: center;
+}
+
+.empty-state i {
+    font-size: 4rem;
+    color: #dee2e6;
+    margin-bottom: 1.5rem;
+}
+
+/* === レスポンシブ対応 === */
+@media (max-width: 768px) {
+    .btn-group-sm .btn {
+        padding: 0.2rem 0.3rem;
+        font-size: 0.7rem;
+    }
+    
+    .application-comment {
+        max-width: 150px;
+    }
+    
+    .user-avatar {
+        width: 28px;
+        height: 28px;
+        font-size: 0.8rem;
+    }
+}

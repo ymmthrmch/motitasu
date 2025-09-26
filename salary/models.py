@@ -32,6 +32,10 @@ class SalaryGrade(models.Model):
     name = models.CharField(max_length=50, verbose_name='グレード名')
     hourly_wage = models.DecimalField(max_digits=6, decimal_places=0, verbose_name='時給')
     level = models.IntegerField(verbose_name='レベル')  # unique=False: 同レベルに複数グレード可能
+    description = models.TextField(
+        verbose_name='説明',
+        default=''
+        )
     required_skills = models.ManyToManyField(Skill, blank=True, verbose_name='必要習得スキル')
     next_possible_grades = models.ManyToManyField(
         'self', blank=True, symmetrical=False,

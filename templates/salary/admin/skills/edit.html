@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}スキル編集 - {{ skill.name }} - Motitasu{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'salary/css/admin.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- パンくずリスト -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'salary:admin_dashboard' %}">
+                    <i class="bi bi-speedometer2"></i> 管理ダッシュボード
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'salary:admin_skills' %}">
+                    <i class="bi bi-award"></i> スキル管理
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">{{ skill.name }}の編集</li>
+        </ol>
+    </nav>
+
+    <!-- ヘッダー -->
+    <div class="text-center mb-4">
+        <h2 class="page-title">
+            <i class="bi bi-pencil"></i>スキル編集: {{ skill.name }}
+        </h2>
+        <div class="mt-2">
+            <span class="status-indicator status-info">
+                {{ skill.get_category_display }}
+            </span>
+            {% if skill.holders_count > 0 %}
+                <span class="status-indicator status-success ms-2">
+                    <i class="bi bi-people"></i> {{ skill.holders_count }}人が習得済み
+                </span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- スキル編集フォーム -->
+            <div class="card-base">
+                <div class="card-header-primary">
+                    <h5 class="mb-0">
+                        <i class="bi bi-gear"></i> スキル情報編集
+                    </h5>
+                </div>
+                <div class="card-body-standard">
+                    <form method="post" id="skillEditForm">
+                        {% csrf_token %}
+                        
+                        <!-- スキル名 -->
+                        <div class="mb-4">
+                            <label for="id_name" class="form-label fw-semibold">
+                                <i class="bi bi-tag"></i> スキル名 <span class="text-danger">*</span>
+                            </label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.name.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- カテゴリ -->
+                        <div class="mb-4">
+                            <label for="id_category" class="form-label fw-semibold">
+                                <i class="bi bi-collection"></i> カテゴリ <span class="text-danger">*</span>
+                            </label>
+                            {{ form.category }}
+                            {% if skill.holders_count > 0 %}
+                                <div class="form-text text-warning">
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                    既に習得者がいるため、カテゴリ変更は慎重に行ってください。
+                                </div>
+                            {% endif %}
+                            {% if form.category.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.category.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- 説明 -->
+                        <div class="mb-4">
+                            <label for="id_description" class="form-label fw-semibold">
+                                <i class="bi bi-text-paragraph"></i> 説明
+                            </label>
+                            {{ form.description }}
+                            <div class="form-text">
+                                このスキルの内容や習得要件について詳しく記載してください。
+                            </div>
+                            {% if form.description.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.description.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+
+                        <!-- アクションボタン -->
+                        <div class="action-buttons">
+                            <button type="submit" class="btn-gradient-success me-3">
+                                <i class="bi bi-check-lg"></i> 変更を保存
+                            </button>
+                            <a href="{% url 'salary:admin_skills' %}" class="btn-gradient-info">
+                                <i class="bi bi-arrow-left"></i> 一覧に戻る
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('skillEditForm');
+    
+    form.addEventListener('submit', function(e) {
+        const submitBtn = form.querySelector('button[type="submit"]');
+        
+        // 二重送信防止
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> 保存中...';
+        
+        // フォームエラーがあれば再有効化
+        setTimeout(() => {
+            if (document.querySelector('.text-danger')) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="bi bi-check-lg"></i> 変更を保存';
+            }
+        }, 100);
+    });
+});
+</script>
+{% endblock %}

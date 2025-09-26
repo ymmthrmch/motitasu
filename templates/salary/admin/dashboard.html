@@ -1,0 +1,307 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}管理ダッシュボード - Motitasu{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'salary/css/admin.css' %}">
+<link rel="stylesheet" href="{% static 'salary/css/admin-dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- パンくずリスト -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item active" aria-current="page">
+                <i class="bi bi-speedometer2"></i> 管理ダッシュボード
+            </li>
+        </ol>
+    </nav>
+
+    <!-- ヘッダー -->
+    <div class="text-center mb-4">
+        <h2 class="page-title">
+            <i class="bi bi-speedometer2"></i>管理ダッシュボード
+        </h2>
+    </div>
+
+    <!-- 統計サマリーカード -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card-base">
+                <div class="card-header-primary">
+                    <h6 class="mb-0">
+                        <i class="bi bi-people"></i> 総ユーザー数
+                    </h6>
+                </div>
+                <div class="card-body-standard text-center">
+                    <div class="display-info">{{ total_users }}</div>
+                    <div class="sub-info">人のユーザー</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card-base">
+                <div class="card-header-success">
+                    <h6 class="mb-0">
+                        <i class="bi bi-award"></i> 総スキル数
+                    </h6>
+                </div>
+                <div class="card-body-standard text-center">
+                    <div class="display-info success">{{ total_skills }}</div>
+                    <div class="sub-info">個のスキル</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card-base">
+                <div class="card-header-warning">
+                    <h6 class="mb-0">
+                        <i class="bi bi-cash-stack"></i> 給与グレード
+                    </h6>
+                </div>
+                <div class="card-body-standard text-center">
+                    <div class="display-info warning">{{ total_grades }}</div>
+                    <div class="sub-info">個のグレード</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card-base">
+                {% if pending_applications > 0 %}
+                    <div class="card-header-warning">
+                        <h6 class="mb-0">
+                            <i class="bi bi-exclamation-triangle"></i> 承認待ち
+                        </h6>
+                    </div>
+                    <div class="card-body-standard text-center">
+                        <div class="display-info warning">{{ pending_applications }}</div>
+                        <div class="sub-info">件の申告</div>
+                        <div class="mt-2">
+                            <a href="{% url 'salary:admin_applications' %}" class="btn-gradient-primary btn-sm">
+                                <i class="bi bi-arrow-right"></i> 確認する
+                            </a>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="card-header-success">
+                        <h6 class="mb-0">
+                            <i class="bi bi-check-circle"></i> 承認待ち
+                        </h6>
+                    </div>
+                    <div class="card-body-standard text-center">
+                        <div class="display-info success">0</div>
+                        <div class="sub-info">件の申告</div>
+                        <small class="text-success">すべて処理済み</small>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- スキル習得者マップ -->
+        <div class="col-lg-6 mb-4">
+            <div class="card-base">
+                <div class="card-header-success">
+                    <h5 class="mb-0">
+                        <i class="bi bi-award"></i> スキル一覧
+                    </h5>
+                </div>
+                <div class="card-body-standard">
+                    {% if skills_map %}
+                        <div class="skills-map">
+                            {% for skill in skills_map %}
+                                <a href="{% url 'salary:admin_skill_holders' skill.id %}" class="skill-map-link">
+                                    <div class="skill-map-item">
+                                        <div class="skill-header">
+                                            <div class="skill-name">{{ skill.name }}</div>
+                                            <span class="status-indicator status-info">
+                                                {{ skill.holders_count }}人
+                                            </span>
+                                        </div>
+                                        <div class="skill-category mb-2">
+                                            <small class="text-muted">{{ skill.get_category_display }}</small>
+                                        </div>
+                                        <div class="holders-avatars mb-2">
+                                            {% for holder in skill.userskill_set.all|slice:":6" %}
+                                                <span class="user-avatar me-1" title="{{ holder.user.name }}">
+                                                    {{ holder.user.name|first }}
+                                                </span>
+                                            {% endfor %}
+                                            {% if skill.holders_count > 6 %}
+                                                <span class="more-holders">+{{ skill.holders_count|add:"-6" }}</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </a>
+                            {% endfor %}
+                        </div>
+                        {% if skills_map|length >= 10 %}
+                            <div class="text-center mt-3">
+                                <a href="{% url 'salary:admin_skills' %}" class="btn-gradient-info">
+                                    <i class="bi bi-arrow-right"></i> すべてのスキルを見る
+                                </a>
+                            </div>
+                        {% endif %}
+                        <div class="text-center mt-4">
+                            <a href="{% url 'salary:admin_skills' %}" class="btn-gradient-success">
+                                <i class="bi bi-arrow-right"></i> スキル管理へ
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-award text-muted" style="font-size: 3rem;"></i>
+                            <p class="text-muted mt-2">まだスキルが登録されていません</p>
+                            <a href="{% url 'salary:admin_skills' %}" class="btn-gradient-primary">
+                                <i class="bi bi-plus"></i> スキルを追加
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- グレード所属者マップ -->
+        <div class="col-lg-6 mb-4">
+            <div class="card-base">
+                <div class="card-header-warning">
+                    <h5 class="mb-0">
+                        <i class="bi bi-cash-stack"></i> 給与グレード一覧
+                    </h5>
+                </div>
+                <div class="card-body-standard">
+                    {% if grades_map %}
+                        <div class="grades-map">
+                            {% for grade in grades_map %}
+                                <a href="{% url 'salary:admin_grade_members' grade.id %}" class="grade-map-link">
+                                    <div class="grade-map-item">
+                                        <div class="grade-header">
+                                            <div class="grade-info">
+                                                <div class="grade-name">{{ grade.name }}</div>
+                                                <small class="grade-level text-muted">レベル {{ grade.level }}</small>
+                                            </div>
+                                            <div class="grade-stats">
+                                                <span class="status-indicator status-success">
+                                                    {{ grade.members_count }}人
+                                                </span>
+                                                <div class="grade-wage">
+                                                    <small class="text-success">¥{{ grade.hourly_wage|floatformat:0 }}/時</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="members-avatars mb-2">
+                                            {% for member in grade.usersalarygrade_set.all|slice:":6" %}
+                                                <span class="user-avatar me-1" title="{{ member.user.name }}">
+                                                    {{ member.user.name|first }}
+                                                </span>
+                                            {% endfor %}
+                                            {% if grade.members_count > 6 %}
+                                                <span class="more-holders">+{{ grade.members_count|add:"-6" }}</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="grade-actions">
+                                            <span class="btn-gradient-success btn-sm">
+                                                <i class="bi bi-people"></i> 所属者
+                                            </span>
+                                        </div>
+                                    </div>
+                                </a>
+                            {% endfor %}
+                        </div>
+                        <div class="text-center mt-4">
+                            <a href="{% url 'salary:admin_grades' %}" class="btn-gradient-warning">
+                                <i class="bi bi-arrow-right"></i> 給与グレード管理へ
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-cash-stack text-muted" style="font-size: 3rem;"></i>
+                            <p class="text-muted mt-2">まだグレードが作成されていません</p>
+                            <a href="{% url 'salary:admin_grades' %}" class="btn-gradient-success">
+                                <i class="bi bi-plus"></i> グレードを追加
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 最近の活動ログ -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card-base">
+                <div class="card-header-primary">
+                    <h5 class="mb-0">
+                        <i class="bi bi-clock-history"></i> 最近の管理者活動
+                    </h5>
+                </div>
+                <div class="card-body-standard">
+                    {% if recent_actions %}
+                        <div class="activity-log">
+                            {% for action in recent_actions %}
+                                <div class="activity-item">
+                                    <div class="activity-icon">
+                                        {% if action.action == 'skill_create' %}
+                                            <i class="bi bi-plus-circle text-success"></i>
+                                        {% elif action.action == 'skill_edit' %}
+                                            <i class="bi bi-pencil text-primary"></i>
+                                        {% elif action.action == 'skill_delete' %}
+                                            <i class="bi bi-trash text-danger"></i>
+                                        {% elif action.action == 'skill_grant' %}
+                                            <i class="bi bi-award text-success"></i>
+                                        {% elif action.action == 'skill_revoke' %}
+                                            <i class="bi bi-x-circle text-warning"></i>
+                                        {% elif action.action == 'grade_create' %}
+                                            <i class="bi bi-plus-square text-success"></i>
+                                        {% elif action.action == 'grade_edit' %}
+                                            <i class="bi bi-gear text-primary"></i>
+                                        {% elif action.action == 'grade_delete' %}
+                                            <i class="bi bi-trash text-danger"></i>
+                                        {% elif action.action == 'grade_change' %}
+                                            <i class="bi bi-arrow-up text-info"></i>
+                                        {% elif action.action == 'application_approve' %}
+                                            <i class="bi bi-check-circle text-success"></i>
+                                        {% elif action.action == 'application_reject' %}
+                                            <i class="bi bi-x-circle text-danger"></i>
+                                        {% else %}
+                                            <i class="bi bi-info-circle text-secondary"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div class="activity-content">
+                                        <div class="activity-description">{{ action.description }}</div>
+                                        <div class="activity-meta">
+                                            <span class="activity-admin">{{ action.admin_user.name }}</span>
+                                            <span class="activity-time">{{ action.timestamp|date:"n/j H:i" }}</span>
+                                            {% if action.target_user %}
+                                                <span class="activity-target">
+                                                    → <a href="{% url 'salary:admin_user_detail' action.target_user.id %}" 
+                                                         class="text-decoration-none">{{ action.target_user.name }}</a>
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-clock-history text-muted" style="font-size: 3rem;"></i>
+                            <p class="text-muted mt-2">まだ活動履歴がありません</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'salary/js/admin-dashboard.js' %}"></script>
+{% endblock %}

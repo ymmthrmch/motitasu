@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}グレード作成 - Motitasu{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'salary/css/admin.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- パンくずリスト -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'salary:admin_dashboard' %}">
+                    <i class="bi bi-speedometer2"></i> 管理ダッシュボード
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'salary:admin_grades' %}">
+                    <i class="bi bi-cash-stack"></i> 給与グレード管理
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">新規作成</li>
+        </ol>
+    </nav>
+
+    <!-- ヘッダー -->
+    <div class="text-center mb-4">
+        <h2 class="page-title">
+            <i class="bi bi-plus-circle"></i>新しい給与グレードの作成
+        </h2>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- グレード作成フォーム -->
+            <div class="card-base">
+                <div class="card-header-primary">
+                    <h5 class="mb-0">
+                        <i class="bi bi-file-earmark-plus"></i> グレード情報入力
+                    </h5>
+                </div>
+                <div class="card-body-standard">
+                    <form method="post" id="gradeCreateForm">
+                        {% csrf_token %}
+                        
+                        <!-- グレード名 -->
+                        <div class="mb-4">
+                            <label for="id_name" class="form-label fw-semibold">
+                                <i class="bi bi-tag"></i> グレード名 <span class="text-danger">*</span>
+                            </label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.name.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- 説明 -->
+                        <div class="mb-4">
+                            <label for="id_description" class="form-label fw-semibold">
+                                <i class="bi bi-file-text"></i> 説明
+                            </label>
+                            {{ form.description }}
+                            <div class="form-text">
+                                グレードの詳細な説明や注意事項を入力してください。（任意）
+                            </div>
+                            {% if form.description.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.description.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- レベル -->
+                        <div class="mb-4">
+                            <label for="id_level" class="form-label fw-semibold">
+                                <i class="bi bi-bar-chart-steps"></i> レベル <span class="text-danger">*</span>
+                            </label>
+                            {{ form.level }}
+                            <div class="form-text">
+                                数値が大きいほど上位のグレードとなります。（例: 1=新人、2=一般、3=リーダー）
+                            </div>
+                            {% if form.level.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.level.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- 時給 -->
+                        <div class="mb-4">
+                            <label for="id_hourly_wage" class="form-label fw-semibold">
+                                <i class="bi bi-currency-yen"></i> 時給 <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">¥</span>
+                                {{ form.hourly_wage }}
+                            </div>
+                            {% if form.hourly_wage.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.hourly_wage.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- 必要スキル -->
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">
+                                <i class="bi bi-award"></i> 必要スキル
+                            </label>
+                            {{ form.required_skills }}
+                            <div class="row">
+                                <div class="col-5">
+                                    <label class="form-label small">利用可能なスキル</label>
+                                    <select multiple class="form-select" id="availableSkills" style="height: 200px; min-height: 200px;">
+                                        {% for skill in all_skills %}
+                                        <option value="{{ skill.id }}">{{ skill.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-2 d-flex flex-column justify-content-center align-items-center gap-2">
+                                    <button type="button" class="btn-gradient-primary btn-sm px-3" id="addSkillBtn">
+                                        <i class="bi bi-arrow-right"></i>
+                                    </button>
+                                    <button type="button" class="btn-gradient-primary btn-sm px-3" id="removeSkillBtn">
+                                        <i class="bi bi-arrow-left"></i>
+                                    </button>
+                                </div>
+                                <div class="col-5">
+                                    <label class="form-label small">必要スキル</label>
+                                    <select multiple class="form-select" id="selectedSkills" style="height: 200px; min-height: 200px;">
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-text">
+                                左のリストからスキルを選択して右矢印ボタンで追加、右のリストから左矢印ボタンで削除できます。
+                            </div>
+                            {% if form.required_skills.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.required_skills.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- 昇進先グレード -->
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">
+                                <i class="bi bi-arrow-up-right"></i> 昇進先グレード
+                            </label>
+                            {{ form.next_possible_grades }}
+                            <div class="row">
+                                <div class="col-5">
+                                    <label class="form-label small">利用可能なグレード</label>
+                                    <select multiple class="form-select" id="availableGrades" style="height: 200px; min-height: 200px;">
+                                        {% for grade in all_grades %}
+                                        <option value="{{ grade.id }}">{{ grade.name }} (レベル{{ grade.level }})</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-2 d-flex flex-column justify-content-center align-items-center gap-2">
+                                    <button type="button" class="btn-gradient-primary btn-sm px-3" id="addGradeBtn">
+                                        <i class="bi bi-arrow-right"></i>
+                                    </button>
+                                    <button type="button" class="btn-gradient-primary btn-sm px-3" id="removeGradeBtn">
+                                        <i class="bi bi-arrow-left"></i>
+                                    </button>
+                                </div>
+                                <div class="col-5">
+                                    <label class="form-label small">昇進先グレード</label>
+                                    <select multiple class="form-select" id="selectedGrades" style="height: 200px; min-height: 200px;">
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-text">
+                                左のリストからグレードを選択して右矢印ボタンで追加、右のリストから左矢印ボタンで削除できます。
+                            </div>
+                            {% if form.next_possible_grades.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.next_possible_grades.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- アクションボタン -->
+                        <div class="action-buttons">
+                            <button type="submit" class="btn-gradient-success me-3">
+                                <i class="bi bi-check-lg"></i> グレードを作成
+                            </button>
+                            <a href="{% url 'salary:admin_grades' %}" class="btn-gradient-info">
+                                <i class="bi bi-arrow-left"></i> 一覧に戻る
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'salary/js/admin-grade-form.js' %}"></script>
+{% endblock %}

@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils import timezone
-from .models import Skill, SalaryGrade, UserSkill, SkillApplication, UserSalaryGrade
+from .models import Skill, SalaryGrade, UserSkill, SkillApplication, UserSalaryGrade, AdminActionLog
 
 
 @admin.register(Skill)
@@ -13,7 +13,7 @@ class SkillAdmin(admin.ModelAdmin):
 
 @admin.register(SalaryGrade)
 class SalaryGradeAdmin(admin.ModelAdmin):
-    list_display = ('name', 'level', 'hourly_wage', 'required_skills_count', 'next_grades_count')
+    list_display = ('name', 'level', 'hourly_wage', 'description', 'required_skills_count', 'next_grades_count')
     list_filter = ('level',)
     search_fields = ('name',)
     ordering = ('level', 'name')
@@ -119,3 +119,21 @@ class UserSalaryGradeAdmin(admin.ModelAdmin):
         if not obj.changed_by:
             obj.changed_by = request.user
         super().save_model(request, obj, form, change)
+
+
+@admin.register(AdminActionLog)
+class AdminActionLogAdmin(admin.ModelAdmin):
+    list_display = ('timestamp', 'admin_user', 'action', 'target_user', 'description')
+    list_filter = ('action', 'timestamp', 'admin_user')
+    search_fields = ('admin_user__name', 'target_user__name', 'description')
+    ordering = ('-timestamp',)
+    readonly_fields = ('timestamp', 'admin_user', 'action', 'target_user', 'description')
+    
+    def has_add_permission(self, request):
+        return False
+    
+    def has_change_permission(self, request, obj=None):
+        return False
+    
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_superuser

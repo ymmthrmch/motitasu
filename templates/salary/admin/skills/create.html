@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}スキル作成 - Motitasu{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'salary/css/admin.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- パンくずリスト -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'salary:admin_dashboard' %}">
+                    <i class="bi bi-speedometer2"></i> 管理ダッシュボード
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'salary:admin_skills' %}">
+                    <i class="bi bi-award"></i> スキル管理
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">新規作成</li>
+        </ol>
+    </nav>
+
+    <!-- ヘッダー -->
+    <div class="text-center mb-4">
+        <h2 class="page-title">
+            <i class="bi bi-plus-circle"></i>新しいスキルの作成
+        </h2>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- スキル作成フォーム -->
+            <div class="card-base">
+                <div class="card-header-primary">
+                    <h5 class="mb-0">
+                        <i class="bi bi-file-earmark-plus"></i> スキル情報入力
+                    </h5>
+                </div>
+                <div class="card-body-standard">
+                    <form method="post" id="skillCreateForm">
+                        {% csrf_token %}
+                        
+                        <!-- スキル名 -->
+                        <div class="mb-4">
+                            <label for="id_name" class="form-label fw-semibold">
+                                <i class="bi bi-tag"></i> スキル名 <span class="text-danger">*</span>
+                            </label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.name.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- カテゴリ -->
+                        <div class="mb-4">
+                            <label for="id_category" class="form-label fw-semibold">
+                                <i class="bi bi-collection"></i> カテゴリ <span class="text-danger">*</span>
+                            </label>
+                            {{ form.category }}
+                            {% if form.category.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.category.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- 説明 -->
+                        <div class="mb-4">
+                            <label for="id_description" class="form-label fw-semibold">
+                                <i class="bi bi-text-paragraph"></i> 説明
+                            </label>
+                            {{ form.description }}
+                            <div class="form-text">
+                                このスキルの内容や習得要件について詳しく記載してください。
+                            </div>
+                            {% if form.description.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.description.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- アクションボタン -->
+                        <div class="action-buttons">
+                            <button type="submit" class="btn-gradient-success me-3">
+                                <i class="bi bi-check-lg"></i> スキルを作成
+                            </button>
+                            <a href="{% url 'salary:admin_skills' %}" class="btn-gradient-info">
+                                <i class="bi bi-arrow-left"></i> 一覧に戻る
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('skillCreateForm');
+    
+    form.addEventListener('submit', function(e) {
+        const submitBtn = form.querySelector('button[type="submit"]');
+        
+        // 二重送信防止
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> 作成中...';
+        
+        // フォームエラーがあれば再有効化
+        setTimeout(() => {
+            if (document.querySelector('.text-danger')) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="bi bi-check-lg"></i> スキルを作成';
+            }
+        }, 100);
+    });
+});
+</script>
+{% endblock %}

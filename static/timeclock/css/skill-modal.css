@@ -98,7 +98,7 @@
 
 /* 習得済み状態 */
 .skill-application-section .acquisition-status {
-    background: linear-gradient(135deg, #d4edda 0%, #ffffff 100%);
+    background: rgba(240, 244, 241, 0.5);
     border-radius: 12px;
     padding: 2rem;
     border: 2px solid rgba(40, 167, 69, 0.3);

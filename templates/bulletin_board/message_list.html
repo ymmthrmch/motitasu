@@ -28,7 +28,7 @@
                     </div>
                     <div class="memo-date">{{ message.created_at|date:"n月d日" }}</div>
                 </div>
-                {% if message.user == user or user.is_staff %}
+                {% if message.user == user or user.is_staff or is_superuser %}
                 <div class="memo-menu">
                     <button class="menu-toggle" type="button" onclick="toggleDropdown(this)">
                         <i class="bi bi-three-dots"></i>

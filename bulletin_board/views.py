@@ -128,7 +128,10 @@ def toggle_pin(request):
         message_id = request.POST.get('message_id')
         action = request.POST.get('action')  # 'pin' or 'unpin'
         
-        message = Message.objects.get(id=message_id, user=request.user)  # 自分の投稿のみ
+        if request.user.is_staff or request.user.is_superuser:
+            message = Message.objects.get(id=message_id)  # 自分の投稿のみ
+        else:
+            message = Message.objects.get(id=message_id, user=request.user)  # 自分の投稿のみ
         jst = ZoneInfo(settings.TIME_ZONE)
         
         if action == 'pin':
@@ -204,7 +207,10 @@ def delete_message(request):
     try:
         message_id = request.POST.get('message_id')
         
-        message = Message.objects.get(id=message_id, user=request.user)  # 自分の投稿のみ
+        if request.user.is_staff or request.user.is_superuser:
+            message = Message.objects.get(id=message_id)  # 自分の投稿のみ
+        else:
+            message = Message.objects.get(id=message_id, user=request.user)  # 自分の投稿のみ
         message.delete()
         
         return JsonResponse({

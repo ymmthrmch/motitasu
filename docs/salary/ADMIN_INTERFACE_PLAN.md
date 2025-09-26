@@ -387,5 +387,121 @@ def admin_menu_context(request):
 
 ---
 
+## H. API実装詳細計画 🔧
+
+### Phase 4: API機能実装
+
+#### **スキル管理系API**
+
+##### 1. スキル削除API (`AdminSkillDeleteAPI`)
+```python
+URL: /salary/admin/skills/<id>/delete/
+Method: POST
+権限: AdminRequiredMixin + @admin_required_api
+処理:
+  1. スキル存在確認
+  2. 習得者がいる場合はUserSkillレコード削除
+  3. スキル本体を削除
+  4. AdminActionLog記録
+  5. JSON応答返却
+```
+
+##### 2. スキル習得取消API (`AdminRevokeSkillAPI`)
+```python
+URL: /salary/admin/skills/api/holder-revoke/
+Method: POST
+Body: {"user_id": int, "skill_id": int}
+権限: AdminRequiredMixin + @admin_required_api
+処理:
+  1. UserSkillレコード削除
+  2. 関連するSkillApplicationのステータスを'revoked'に変更
+  3. AdminActionLog記録
+  4. ユーザーダッシュボードで「未習得」表示になるよう対応
+```
+
+#### **グレード管理系API**
+
+##### 3. グレード削除API (`AdminGradeDeleteAPI`)
+```python
+URL: /salary/admin/grades/<id>/delete/
+Method: POST
+権限: AdminRequiredMixin + @admin_required_api
+処理:
+  1. グレード存在確認
+  2. 所属者チェック → いる場合はエラー返却（削除不可）
+  3. 所属者がいない場合のみ削除実行
+  4. AdminActionLog記録
+```
+
+#### **ユーザー管理系API**
+
+##### 4. スキル手動付与API (`AdminGrantSkillAPI`)
+```python
+URL: /salary/admin/user-management/api/grant-skill/
+Method: POST
+Body: {"user_id": int, "skill_id": int}
+権限: AdminRequiredMixin + @admin_required_api
+処理:
+  1. 重複付与チェック
+  2. UserSkillレコード作成
+  3. SkillApplication作成（手動付与用）
+  4. AdminActionLog記録
+```
+
+##### 5. ユーザースキル取消API (`AdminRevokeUserSkillAPI`)
+```python
+URL: /salary/admin/user-management/api/revoke-skill/
+Method: POST
+Body: {"user_skill_id": int}
+権限: AdminRequiredMixin + @admin_required_api
+処理:
+  1. UserSkillレコード削除
+  2. 関連SkillApplicationステータス更新
+  3. AdminActionLog記録
+```
+
+##### 6. グレード変更API (`AdminChangeGradeAPI`)
+```python
+URL: /salary/admin/user-management/api/change-grade/
+Method: POST
+Body: {"user_id": int, "grade_id": int}
+権限: AdminRequiredMixin + @admin_required_api
+処理:
+  1. 現在のUserSalaryGrade終了処理
+  2. 新しいUserSalaryGrade作成
+  3. User.current_salary_grade更新
+  4. AdminActionLog記録
+```
+
+### **重要な実装方針**
+
+#### **スキル取消時の動作仕様**
+- **UserSkill削除**: 習得記録を削除
+- **SkillApplication更新**: status='revoked'に変更
+- **ダッシュボード表示**: 「未習得」になる
+
+#### **グレード削除時の制限**
+- 所属者がいる場合は削除不可
+- エラーメッセージで理由説明
+- 削除前に所属者数チェック必須
+
+#### **エラーハンドリング**
+- 全APIでtry-catch実装
+- 適切なエラーメッセージ返却
+- ログ記録（成功・失敗両方）
+
+#### **権限とログ**
+- 全API操作でAdminActionLog記録
+- 操作者・対象ユーザー・操作内容を記録
+- APIアクセス権限チェック
+
+### **実装順序**
+1. スキル削除API + グレード削除API（基本機能）
+2. スキル習得取消API（ユーザーダッシュボード連携考慮）
+3. ユーザー管理系API（スキル付与・取消・グレード変更）
+4. 全体統合テスト
+
+---
+
 **🚀 実装開始準備完了**  
 この設計に基づいて実装を開始します。
