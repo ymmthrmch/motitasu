@@ -74,8 +74,8 @@
                         </div>
                         <div class="col-md-6">
                             <div class="stats-row">
-                                <span class="stats-label">登録日:</span>
-                                <span class="stats-value">{{ target_user.date_joined|date:"Y年n月j日" }}</span>
+                                <span class="stats-label">入社日:</span>
+                                <span class="stats-value">{{ target_user.hire_date|date:"Y年n月j日" }}</span>
                             </div>
                             <div class="stats-row">
                                 <span class="stats-label">最終ログイン:</span>
@@ -115,7 +115,7 @@
                                     <div class="col-md-8">
                                         <h5 class="mb-1">{{ target_user.current_salary_grade.name }}</h5>
                                         <div class="text-success fw-semibold mb-2">
-                                            ¥{{ target_user.current_salary_grade.hourly_rate|floatformat:0 }}/時
+                                            ¥{{ target_user.current_salary_grade.hourly_wage|floatformat:0 }}/時
                                         </div>
                                         {% if target_user.current_salary_grade.description %}
                                             <p class="text-muted mb-0">{{ target_user.current_salary_grade.description }}</p>
@@ -154,7 +154,7 @@
                                         {% for grade in available_grades %}
                                             <option value="{{ grade.id }}" 
                                                     {% if target_user.current_salary_grade and grade.id == target_user.current_salary_grade.id %}disabled{% endif %}>
-                                                {{ grade.name }} (¥{{ grade.hourly_rate|floatformat:0 }}/時)
+                                                {{ grade.name }} (¥{{ grade.hourly_wage|floatformat:0 }}/時)
                                                 {% if target_user.current_salary_grade and grade.id == target_user.current_salary_grade.id %}
                                                     - 現在のグレード
                                                 {% endif %}

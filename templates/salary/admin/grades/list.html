@@ -71,9 +71,6 @@
                             </td>
                             <td>
                                 <div class="fw-semibold">{{ grade.name }}</div>
-                                {% if grade.description %}
-                                    <small class="text-muted">{{ grade.description|truncatechars:30 }}</small>
-                                {% endif %}
                             </td>
                             <td>
                                 <span class="fw-semibold text-success">¥{{ grade.hourly_wage|floatformat:0 }}</span>

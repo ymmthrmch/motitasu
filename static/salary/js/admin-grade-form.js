@@ -71,8 +71,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 編集画面初期化（既存の選択項目を右側に移動）
     function initializeEditMode() {
+        // データ属性またはwindowオブジェクトから既存データを取得
+        const existingSkillIds = getExistingData('required-skills') || window.existingRequiredSkills || [];
+        const existingGradeIds = getExistingData('next-grades') || window.existingNextGrades || [];
+
         // 既存の必要スキルを右側に移動
-        const existingSkillIds = window.existingRequiredSkills || [];
         existingSkillIds.forEach(skillId => {
             const option = availableSkills.querySelector(`option[value="${skillId}"]`);
             if (option) {
@@ -81,7 +84,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         // 既存の昇進先グレードを右側に移動
-        const existingGradeIds = window.existingNextGrades || [];
         existingGradeIds.forEach(gradeId => {
             const option = availableGrades.querySelector(`option[value="${gradeId}"]`);
             if (option) {
@@ -91,6 +93,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
         sortSelectOptions(selectedSkills);
         sortSelectOptions(selectedGrades);
+    }
+
+    // 既存データを取得する関数（data属性から）
+    function getExistingData(dataKey) {
+        const container = document.querySelector('[data-' + dataKey + ']');
+        if (container) {
+            const dataStr = container.getAttribute('data-' + dataKey);
+            try {
+                return JSON.parse(dataStr);
+            } catch (e) {
+                console.warn('Failed to parse existing data:', dataStr);
+                return [];
+            }
+        }
+        return null;
     }
 
     // フォーム送信時にhiddenフィールドに値を設定

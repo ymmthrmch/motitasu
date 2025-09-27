@@ -29,8 +29,8 @@ class SalaryGradeAdmin(admin.ModelAdmin):
     
     def formfield_for_manytomany(self, db_field, request, **kwargs):
         if db_field.name == "next_possible_grades":
-            # 編集時に自分自身を除外
-            if hasattr(request, '_obj_'):
+            # 編集時に自分自身を除外（新規作成時はobjがNoneなのでチェック）
+            if hasattr(request, '_obj_') and request._obj_ is not None:
                 kwargs["queryset"] = SalaryGrade.objects.exclude(pk=request._obj_.pk)
         return super().formfield_for_manytomany(db_field, request, **kwargs)
     

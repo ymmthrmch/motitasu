@@ -46,7 +46,7 @@
         </div>
     </div>
 
-    <div class="row">
+    <div class="row justify-content-center">
         <div class="col-lg-8">
             <!-- グレード編集フォーム -->
             <div class="card-base">
@@ -128,13 +128,36 @@
 
 
                         <!-- 必要スキル -->
-                        <div class="mb-4">
-                            <label for="id_required_skills" class="form-label fw-semibold">
+                        <div class="mb-4" data-required-skills="[{% for skill in grade.required_skills.all %}{{ skill.id }}{% if not forloop.last %},{% endif %}{% endfor %}]">
+                            <label class="form-label fw-semibold">
                                 <i class="bi bi-award"></i> 必要スキル
                             </label>
                             {{ form.required_skills }}
+                            <div class="row">
+                                <div class="col-5">
+                                    <label class="form-label small">利用可能なスキル</label>
+                                    <select multiple class="form-select" id="availableSkills" style="height: 200px; min-height: 200px;">
+                                        {% for skill in all_skills %}
+                                        <option value="{{ skill.id }}">{{ skill.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-2 d-flex flex-column justify-content-center align-items-center gap-2">
+                                    <button type="button" class="btn-gradient-primary btn-sm px-3" id="addSkillBtn">
+                                        <i class="bi bi-arrow-right"></i>
+                                    </button>
+                                    <button type="button" class="btn-gradient-primary btn-sm px-3" id="removeSkillBtn">
+                                        <i class="bi bi-arrow-left"></i>
+                                    </button>
+                                </div>
+                                <div class="col-5">
+                                    <label class="form-label small">必要スキル</label>
+                                    <select multiple class="form-select" id="selectedSkills" style="height: 200px; min-height: 200px;">
+                                    </select>
+                                </div>
+                            </div>
                             <div class="form-text">
-                                このグレードに必要なスキルを選択してください。（複数選択可）
+                                左のリストからスキルを選択して右矢印ボタンで追加、右のリストから左矢印ボタンで削除できます。
                             </div>
                             {% if grade.members_count > 0 %}
                                 <div class="form-text text-warning">
@@ -150,13 +173,36 @@
                         </div>
 
                         <!-- 昇進先グレード -->
-                        <div class="mb-4">
-                            <label for="id_next_possible_grades" class="form-label fw-semibold">
+                        <div class="mb-4" data-next-grades="[{% for next_grade in grade.next_possible_grades.all %}{{ next_grade.id }}{% if not forloop.last %},{% endif %}{% endfor %}]">
+                            <label class="form-label fw-semibold">
                                 <i class="bi bi-arrow-up-right"></i> 昇進先グレード
                             </label>
                             {{ form.next_possible_grades }}
+                            <div class="row">
+                                <div class="col-5">
+                                    <label class="form-label small">利用可能なグレード</label>
+                                    <select multiple class="form-select" id="availableGrades" style="height: 200px; min-height: 200px;">
+                                        {% for grade in all_grades %}
+                                        <option value="{{ grade.id }}">{{ grade.name }} (レベル{{ grade.level }})</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-2 d-flex flex-column justify-content-center align-items-center gap-2">
+                                    <button type="button" class="btn-gradient-primary btn-sm px-3" id="addGradeBtn">
+                                        <i class="bi bi-arrow-right"></i>
+                                    </button>
+                                    <button type="button" class="btn-gradient-primary btn-sm px-3" id="removeGradeBtn">
+                                        <i class="bi bi-arrow-left"></i>
+                                    </button>
+                                </div>
+                                <div class="col-5">
+                                    <label class="form-label small">昇進先グレード</label>
+                                    <select multiple class="form-select" id="selectedGrades" style="height: 200px; min-height: 200px;">
+                                    </select>
+                                </div>
+                            </div>
                             <div class="form-text">
-                                このグレードの次の昇進先を選択してください。（複数選択可）
+                                左のリストからグレードを選択して右矢印ボタンで追加、右のリストから左矢印ボタンで削除できます。
                             </div>
                             {% if form.next_possible_grades.errors %}
                                 <div class="text-danger small mt-1">
@@ -170,76 +216,11 @@
                             <button type="submit" class="btn-gradient-success me-3">
                                 <i class="bi bi-check-lg"></i> 変更を保存
                             </button>
-                            <a href="{% url 'salary:admin_grades' %}" class="btn-gradient-info">
-                                <i class="bi bi-arrow-left"></i> 一覧に戻る
+                            <a href="{% url 'salary:admin_grade_detail' grade.id %}" class="btn-gradient-info">
+                                <i class="bi bi-arrow-left"></i> 詳細に戻る
                             </a>
                         </div>
                     </form>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-4">
-            <!-- グレード所属者情報 -->
-            <div class="card-base mb-4">
-                <div class="card-header-primary">
-                    <h6 class="mb-0">
-                        <i class="bi bi-people"></i> 所属者情報
-                    </h6>
-                </div>
-                <div class="card-body-standard">
-                    <div class="text-center mb-3">
-                        <div class="display-info success">{{ grade.members_count }}</div>
-                        <div class="sub-info">人が所属</div>
-                    </div>
-                    {% if grade.members_count > 0 %}
-                    <div class="d-grid">
-                        <a href="{% url 'salary:admin_grade_members' object.id %}" 
-                           class="btn-gradient-primary">
-                            <i class="bi bi-list"></i> 所属者一覧を見る
-                        </a>
-                    </div>
-                    {% else %}
-                    <div class="text-muted text-center">
-                        <small>まだ所属者がいません</small>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-
-            <!-- 昇進関係情報 -->
-            <div class="card-base">
-                <div class="card-header-info">
-                    <h6 class="mb-0">
-                        <i class="bi bi-diagram-3"></i> 昇進関係
-                    </h6>
-                </div>
-                <div class="card-body-standard">
-                    {% if grade.next_possible_grades.exists %}
-                        <h6 class="text-muted mb-2">昇進先</h6>
-                        <div class="mb-3">
-                            {% for next_grade in grade.next_possible_grades.all %}
-                                <span class="status-indicator status-success me-1 mb-1">
-                                    {{ next_grade.name }}
-                                </span>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                    
-                    {% if grade.salarygrade_set.exists %}
-                        <h6 class="text-muted mb-2">昇進元</h6>
-                        <div class="mb-0">
-                            {% for prev_grade in grade.salarygrade_set.all %}
-                                <span class="status-indicator status-info me-1 mb-1">
-                                    {{ prev_grade.name }}
-                                </span>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <div class="text-muted text-center">
-                            <small>昇進関係が設定されていません</small>
-                        </div>
-                    {% endif %}
                 </div>
             </div>
         </div>
@@ -248,25 +229,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('gradeEditForm');
-    
-    form.addEventListener('submit', function(e) {
-        const submitBtn = form.querySelector('button[type="submit"]');
-        
-        // 二重送信防止
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> 保存中...';
-        
-        // フォームエラーがあれば再有効化
-        setTimeout(() => {
-            if (document.querySelector('.text-danger')) {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="bi bi-check-lg"></i> 変更を保存';
-            }
-        }, 100);
-    });
-});
-</script>
+<script src="{% static 'salary/js/admin-grade-form.js' %}"></script>
 {% endblock %}
