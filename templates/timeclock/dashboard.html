@@ -75,7 +75,17 @@
                         <span class="value">{{ monthly_summary.target_income|floatformat:0 }}円</span>
                     </div>
                     {% else %}
-                    <div class="no-target">目標未設定</div>
+                    <div class="no-target">
+                        <div class="text-center py-3 text-muted">
+                            <i class="bi bi-target" style="font-size: 2rem;"></i>
+                            <p class="mt-2 mb-0">目標未設定</p>
+                            {% if is_current_month %}
+                            <button type="button" class="btn-gradient-primary mt-3" id="setTargetBtn">
+                                <i class="bi bi-plus"></i> 目標を設定
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
                     {% endif %}
                 </div>
             </div>
@@ -404,6 +414,54 @@
                 {% endfor %}
             </tbody>
             </table>
+        </div>
+    </div>
+</div>
+
+<!-- 月収目標設定モーダル -->
+<div class="modal fade modal-common" id="setTargetModal" tabindex="-1" aria-labelledby="setTargetModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="setTargetModalLabel">
+                    <i class="bi bi-target"></i> {{ year }}年{{ month }}月の目標月収設定
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
+            </div>
+            <form id="setTargetForm">
+                {% csrf_token %}
+                <input type="hidden" name="year" value="{{ year }}">
+                <input type="hidden" name="month" value="{{ month }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="targetIncome" class="form-label">目標月収（円）</label>
+                        <input type="number" 
+                               class="modal-textarea" 
+                               id="targetIncome" 
+                               name="target_income" 
+                               placeholder="例: 200000"
+                               min="1"
+                               max="9999999"
+                               style="height: auto; resize: none;"
+                               required>
+                        <div class="form-text text-muted">
+                            <i class="bi bi-info-circle"></i>
+                            現在の時給: {{ user.hourly_wage }}円
+                        </div>
+                    </div>
+                    <div class="status-indicator status-info">
+                        <i class="bi bi-lightbulb"></i>
+                        目標を設定すると、ダッシュボードで達成率を確認できます。
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <div id="targetMessage" class="me-auto"></div>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                    <button type="submit" class="modal-submit-btn" id="setTargetSubmitBtn">
+                        <i class="bi bi-check"></i> 設定する
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

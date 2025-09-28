@@ -481,3 +481,10 @@
         gap: 0.5rem;
     }
 }
+
+/* 目標未設定状態のスタイル */
+.no-target {
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius-md);
+    border: 2px dashed #dee2e6;
+}

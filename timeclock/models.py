@@ -191,3 +191,4 @@ class PaidLeaveRecord(models.Model):
     
     def __str__(self):
         return f"{self.user.name} - {self.get_record_type_display()} {self.days}日 ({self.grant_date})"
+

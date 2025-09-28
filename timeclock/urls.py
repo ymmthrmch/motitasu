@@ -8,4 +8,5 @@ urlpatterns = [
     path('clock/', views.clock_action, name='clock_action'),
     path('dashboard/', views.dashboard, name='dashboard'),
     path('api/current-time/', views.get_current_time, name='get_current_time'),
+    path('api/set-monthly-target/', views.set_monthly_target, name='set_monthly_target'),
 ]

@@ -10,7 +10,7 @@ from zoneinfo import ZoneInfo
 import calendar
 from datetime import datetime, date, timedelta
 from dataclasses import asdict
-from .models import TimeRecord
+from .models import TimeRecord, MonthlyTarget
 from .services import WorkTimeService
 from .services.paid_leave_calculator import PaidLeaveCalculator
 from .services.paid_leave_balance_manager import PaidLeaveBalanceManager
@@ -234,6 +234,9 @@ def dashboard(request):
     salary_skill_service = SalarySkillService(request.user)
     salary_skill_info = salary_skill_service.get_dashboard_info()
     
+    # 現在月かどうかを判定
+    is_current_month = (year == now.year and month == now.month)
+    
     context = {
         'year': year,
         'month': month,
@@ -244,7 +247,8 @@ def dashboard(request):
         'all_time_stats': all_time_stats,
         'weekdays': ['月', '火', '水', '木', '金', '土', '日'],
         'paid_leave_status': paid_leave_status,
-        'salary_skill_info': salary_skill_info
+        'salary_skill_info': salary_skill_info,
+        'is_current_month': is_current_month
     }
     
     return render(request, 'timeclock/dashboard.html', context)
@@ -291,3 +295,55 @@ def get_all_time_stats(user):
         'total_wage': total_wage,
         'start_date': start_date
     }
+
+
+@login_required
+@require_POST
+def set_monthly_target(request):
+    """月収目標を設定するAPI"""
+    try:
+        year = int(request.POST.get('year', 0))
+        month = int(request.POST.get('month', 0))
+        target_income = int(request.POST.get('target_income', 0))
+        
+        if not (1 <= month <= 12):
+            return JsonResponse({
+                'success': False,
+                'message': '月は1から12の間で入力してください。'
+            })
+        
+        if target_income <= 0:
+            return JsonResponse({
+                'success': False,
+                'message': '目標月収は正の値で入力してください。'
+            })
+        
+        # 既存の目標があれば更新、なければ作成
+        monthly_target, created = MonthlyTarget.objects.update_or_create(
+            user=request.user,
+            year=year,
+            month=month,
+            defaults={'target_income': target_income}
+        )
+        
+        action = '作成' if created else '更新'
+        return JsonResponse({
+            'success': True,
+            'message': f'{year}年{month}月の目標月収を{action}しました。',
+            'target': {
+                'year': monthly_target.year,
+                'month': monthly_target.month,
+                'target_income': monthly_target.target_income,
+            }
+        })
+        
+    except (ValueError, TypeError) as e:
+        return JsonResponse({
+            'success': False,
+            'message': '入力値が正しくありません。'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': 'エラーが発生しました。再度お試しください。'
+        })
