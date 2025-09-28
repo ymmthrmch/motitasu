@@ -64,6 +64,12 @@
     overflow: hidden;
 }
 
+.card-base-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-hover);
+    cursor: pointer;
+}
+
 .card-header-primary {
     padding: var(--spacing-md) var(--spacing-lg);
     background: var(--primary-gradient);
@@ -88,10 +94,22 @@
     color: var(--text-white);
 }
 
+.card-header-danger {
+    padding: var(--spacing-md) var(--spacing-lg);
+    background: var(--danger-gradient);
+    color: var(--text-white);
+}
+
 .card-header-primary h5,
 .card-header-success h5,
 .card-header-warning h5,
-.card-header-info h5 {
+.card-header-info h5,
+.card-header-danger h5,
+.card-header-primary h6,
+.card-header-success h6,
+.card-header-warning h6,
+.card-header-info h6,
+.card-header-danger h6 {
     margin: 0;
     font-size: var(--font-size-lg);
     font-weight: var(--font-weight-semibold);
@@ -129,6 +147,10 @@
     transition: var(--transition-standard);
     box-shadow: var(--shadow-md);
     text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    cursor: pointer;
 }
 
 .btn-gradient-danger {
@@ -141,6 +163,10 @@
     transition: var(--transition-standard);
     box-shadow: var(--shadow-md);
     text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    cursor: pointer;
 }
 
 .btn-gradient-info {
@@ -153,6 +179,10 @@
     transition: var(--transition-standard);
     box-shadow: var(--shadow-md);
     text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    cursor: pointer;
 }
 
 .btn-gradient-warning {
@@ -165,6 +195,10 @@
     transition: var(--transition-standard);
     box-shadow: var(--shadow-md);
     text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    cursor: pointer;
 }
 
 .btn-gradient-primary:hover,
@@ -262,6 +296,10 @@
 
 .display-info.danger {
     color: var(--color-danger);
+}
+
+.display-info.info {
+    color: var(--color-info);
 }
 
 .sub-info {

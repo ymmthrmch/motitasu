@@ -34,7 +34,7 @@
         </h2>
         <a href="{% url 'salary:admin_applications' %}" 
            class="btn-gradient-info text-decoration-none position-absolute top-50 end-0 translate-middle-y">
-            <i class="bi bi-arrow-left"></i> 一覧に戻る
+            一覧に戻る
         </a>
     </div>
 
@@ -51,6 +51,7 @@
                     <div class="row mb-4">
                         <div class="col-md-6">
                             <h6 class="text-muted mb-2">申告者情報</h6>
+                            <a href="{% url 'salary:admin_user_detail' application.user.id %}" class="text-decoration-none text-dark">
                             <div class="d-flex align-items-center mb-3">
                                 <span class="user-avatar me-3 large-avatar">
                                     {{ application.user.name|first }}
@@ -60,13 +61,16 @@
                                     <div class="text-muted">{{ application.user.email }}</div>
                                 </div>
                             </div>
+                            </a>
                         </div>
                         <div class="col-md-6">
                             <h6 class="text-muted mb-2">申告スキル</h6>
+                            <a href="{% url 'salary:admin_skill_detail' application.skill.id %}" class="text-decoration-none text-dark">
                             <div class="mb-2">
                                 <span class="h5">{{ application.skill.name }}</span>
                                 <span class="status-indicator status-info ms-2">{{ application.skill.get_category_display }}</span>
                             </div>
+                            </a>
                         </div>
                     </div>
 
@@ -129,58 +133,34 @@
         <!-- サイドバー -->
         <div class="col-lg-4">
             <!-- 申告対象スキルの詳細 -->
-            <div class="card-base mb-4">
-                <div class="card-header-info">
-                    <h6 class="mb-0">
-                        <i class="bi bi-info-circle"></i> 申告対象スキル詳細
-                    </h6>
-                </div>
-                <div class="card-body-standard">
-                    <div class="mb-3">
-                        <h4 class="mb-2">{{ application.skill.name }}</h6>
-                        <span class="status-indicator status-info mb-2 d-inline-block">
-                            {{ application.skill.get_category_display }}
-                        </span>
+            <a href="{% url 'salary:admin_skill_detail' application.skill.id %}" class="text-decoration-none text-dark">
+                <div class="card-base card-base-hover mb-4">
+                    <div class="card-header-info">
+                        <h6 class="mb-0">
+                            <i class="bi bi-info-circle"></i> 申告対象スキル詳細
+                        </h6>
                     </div>
-                    <div class="mb-3">
-                        <h6 class="text-muted mb-2 small">説明</h6>
-                        <p class="mb-3">
-                            {% if application.skill.description %}
-                                {{ application.skill.description }}
-                            {% else %}
-                                <em class="text-muted">説明が登録されていません。</em>
-                            {% endif %}
-                        </p>
-                    </div>
-                    
-                    <!-- 習得者一覧 -->
-                    <div>
-                        <h6 class="text-muted mb-2 small">習得者</h6>
-                        {% if skill_holders %}
-                            <div class="d-flex flex-wrap gap-2">
-                                {% for holder in skill_holders|slice:":8" %}
-                                <div class="holder-item">
-                                    <span class="user-avatar me-2">{{ holder.user.name|first }}</span>
-                                    <div class="holder-info">
-                                        <span class="holder-name">{{ holder.user.name }}</span>
-                                        <small class="holder-date">{{ holder.acquired_date|date:"Y/n/j" }}</small>
-                                    </div>
-                                </div>
-                                {% endfor %}
-                                {% if skill_holders|length > 8 %}
-                                <div class="align-self-end ms-2 my-2">
-                                    <small class="text-muted">他{{ skill_holders|length|add:"-8" }}人</small>
-                                </div>
+                    <div class="card-body-standard">
+                        <div class="mb-3">
+                            <h4 class="mb-2">{{ application.skill.name }}</h6>
+                            <span class="status-indicator status-info mb-2 d-inline-block">
+                                {{ application.skill.get_category_display }}
+                            </span>
+                        </div>
+                        <div class="mb-3">
+                            <h6 class="text-muted mb-2 small">説明</h6>
+                            <p class="mb-3">
+                                {% if application.skill.description %}
+                                    {{ application.skill.description }}
+                                {% else %}
+                                    <em class="text-muted">説明が登録されていません。</em>
                                 {% endif %}
-                            </div>
-                        {% else %}
-                            <p class="mb-0 small text-muted">
-                                <em>まだ習得者はいません。</em>
                             </p>
-                        {% endif %}
+                        </div>
+                        
                     </div>
                 </div>
-            </div>
+            </a>
             
             <!-- 申告者の既存スキル -->
             <div class="card-base mb-4">
@@ -193,12 +173,15 @@
                     {% if user_skills %}
                         <div class="skill-list">
                             {% for user_skill in user_skills %}
-                            <div class="skill-item">
-                                <div class="skill-info">
-                                    <span class="skill-name">{{ user_skill.skill.name }}</span>
-                                </div>
-                                <small class="text-muted">{{ user_skill.acquired_date|date:"Y/n/j" }}</small>
-                            </div>
+                                <a href="{% url 'salary:admin_skill_detail' user_skill.skill.id %}" class="interactive-card-link text-decoration-none">
+                                    <div class="interactive-card interactive-card-primary d-flex justify-content-between align-items-center mb-2">
+                                        <div class="skill-info">
+                                            <div class="text-dark fw-semibold">{{ user_skill.skill.name }}</div>
+                                            <span class="status-indicator status-info">{{ user_skill.skill.get_category_display }}</span>
+                                        </div>
+                                        <small class="text-muted">{{ user_skill.acquired_date|date:"Y/n/j" }}</small>
+                                    </div>
+                                </a>
                             {% endfor %}
                         </div>
                     {% else %}

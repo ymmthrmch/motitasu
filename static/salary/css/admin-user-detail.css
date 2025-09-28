@@ -1,5 +1,44 @@
 /* ユーザー詳細管理画面専用CSS */
 
+/* === 共通インタラクティブカード === */
+.interactive-card {
+    background: var(--bg-primary);
+    border: 1px solid #dee2e6;
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-md);
+    transition: var(--transition-standard);
+}
+
+.interactive-card-lg {
+    padding: var(--spacing-lg);
+}
+
+.interactive-card-link:hover .interactive-card {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+    cursor: pointer;
+}
+
+/* バリエーション */
+.interactive-card-primary:hover {
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    border-color: var(--color-primary);
+}
+
+.interactive-card-success:hover {
+    background: linear-gradient(135deg, #e8f5e8 0%, #f1f8e9 100%);
+    border-color: #4caf50;
+}
+
+.interactive-card-info:hover {
+    background: linear-gradient(135deg, #f0f8ff 0%, #e6f3ff 100%);
+    border-color: var(--color-primary);
+}
+
+.interactive-card-gray:hover {
+    border-color: #c9c9c9;
+}
+
 /* === 大きなユーザーアバター === */
 .large-avatar {
     width: 60px;
@@ -9,19 +48,7 @@
 
 /* === 現在のグレードカード === */
 .current-grade-card {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    border: 1px solid #dee2e6;
-    border-radius: var(--border-radius-md);
-    padding: var(--spacing-lg);
     margin-bottom: var(--spacing-md);
-}
-
-/* === 昇進条件カード === */
-.promotion-card {
-    background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
-    border: 1px solid #f0d000;
-    border-radius: var(--border-radius-md);
-    padding: var(--spacing-md);
 }
 
 /* === スキルグリッド === */
@@ -32,19 +59,9 @@
 }
 
 .skill-card {
-    background: var(--bg-primary);
-    border: 1px solid #dee2e6;
-    border-radius: var(--border-radius-md);
-    padding: var(--spacing-md);
-    transition: var(--transition-standard);
     display: flex;
     justify-content: space-between;
     align-items: center;
-}
-
-.skill-card:hover {
-    box-shadow: var(--shadow-md);
-    transform: translateY(-2px);
 }
 
 .skill-info {
@@ -72,7 +89,48 @@
     margin-left: var(--spacing-sm);
 }
 
-/* === タイムライン === */
+/* === グレード履歴 === */
+.grade-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.grade-history-item {
+    /* 基本スタイルはinteractive-cardから継承 */
+}
+
+.grade-history-item-link:hover .current-grade-item {
+    background: linear-gradient(135deg, #e8f5e8 0%, #dcf5e1 100%);
+    border-color: #4caf50;
+}
+
+.grade-history-item.current-grade-item {
+    background: linear-gradient(135deg, #e8f5e8 0%, #f1f8e9 100%);
+    border-color: #4caf50;
+    position: relative;
+}
+
+.grade-info h6 {
+    color: var(--text-primary);
+    font-weight: var(--font-weight-semibold);
+}
+
+.grade-details {
+    font-size: var(--font-size-sm);
+}
+
+.grade-date {
+    text-align: right;
+    color: var(--text-secondary);
+}
+
+.grade-date .fw-semibold {
+    color: var(--text-primary);
+    font-size: var(--font-size-base);
+}
+
+/* === タイムライン（旧スタイル、後方互換性のため残す） === */
 .timeline {
     position: relative;
     padding-left: 2rem;

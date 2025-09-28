@@ -47,6 +47,13 @@
                 <span class="status-indicator status-info">一般ユーザー</span>
             {% endif %}
         </div>
+        
+        <!-- 一覧へ戻るボタン -->
+        <div class="text-end mb-3">
+            <a href="{% url 'salary:admin_user_management' %}" class="btn-gradient-info">
+                一覧へ戻る
+            </a>
+        </div>
     </div>
 
     <div class="row">
@@ -109,30 +116,32 @@
                     <!-- 現在のグレード表示 -->
                     <div class="current-grade-section mb-4">
                         <h6 class="text-muted mb-3">現在のグレード</h6>
-                        {% if target_user.current_salary_grade %}
-                            <div class="current-grade-card">
-                                <div class="row align-items-center">
-                                    <div class="col-md-8">
-                                        <h5 class="mb-1">{{ target_user.current_salary_grade.name }}</h5>
-                                        <div class="text-success fw-semibold mb-2">
-                                            ¥{{ target_user.current_salary_grade.hourly_wage|floatformat:0 }}/時
+                        {% if current_salary_grade %}
+                            <a href="{% url 'salary:admin_grade_detail' current_salary_grade.id %}" class="text-decoration-none text-reset interactive-card-link">
+                                <div class="interactive-card interactive-card-lg interactive-card-gray current-grade-card">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-8">
+                                            <h5 class="mb-1">{{ current_salary_grade.name }}</h5>
+                                            <div class="text-success fw-semibold mb-2">
+                                                ¥{{ current_salary_grade.hourly_wage|floatformat:0 }}/時
+                                            </div>
+                                            {% if current_salary_grade.description %}
+                                                <p class="text-muted mb-0">{{ current_salary_grade.description }}</p>
+                                            {% endif %}
                                         </div>
-                                        {% if target_user.current_salary_grade.description %}
-                                            <p class="text-muted mb-0">{{ target_user.current_salary_grade.description }}</p>
-                                        {% endif %}
-                                    </div>
-                                    <div class="col-md-4 text-end">
-                                        <span class="status-indicator status-info">
-                                            レベル {{ target_user.current_salary_grade.level }}
-                                        </span>
-                                        {% if current_grade_member.start_date %}
-                                            <small class="d-block text-muted mt-1">
-                                                {{ current_grade_member.start_date|date:"Y/n/j" }}から
-                                            </small>
-                                        {% endif %}
+                                        <div class="col-md-4 text-end">
+                                            <span class="status-indicator status-info">
+                                                レベル {{ current_salary_grade.level }}
+                                            </span>
+                                            {% if current_grade_member.effective_date %}
+                                                <small class="d-block text-muted mt-1">
+                                                    {{ current_grade_member.effective_date|date:"Y/n/j" }}から
+                                                </small>
+                                            {% endif %}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            </a>
                         {% else %}
                             <div class="alert alert-warning">
                                 <i class="bi bi-exclamation-triangle"></i>
@@ -153,9 +162,9 @@
                                         <option value="">グレードを選択</option>
                                         {% for grade in available_grades %}
                                             <option value="{{ grade.id }}" 
-                                                    {% if target_user.current_salary_grade and grade.id == target_user.current_salary_grade.id %}disabled{% endif %}>
+                                                    {% if current_salary_grade and grade.id == current_salary_grade.id %}disabled{% endif %}>
                                                 {{ grade.name }} (¥{{ grade.hourly_wage|floatformat:0 }}/時)
-                                                {% if target_user.current_salary_grade and grade.id == target_user.current_salary_grade.id %}
+                                                {% if current_salary_grade and grade.id == current_salary_grade.id %}
                                                     - 現在のグレード
                                                 {% endif %}
                                             </option>
@@ -170,49 +179,6 @@
                             </div>
                         </form>
                     </div>
-
-                    <!-- 昇進条件確認 -->
-                    {% if target_user.current_salary_grade and target_user.current_salary_grade.promotion_target %}
-                        <div class="promotion-status-section mt-4">
-                            <h6 class="text-muted mb-3">昇進条件</h6>
-                            <div class="promotion-card">
-                                <div class="d-flex align-items-center mb-3">
-                                    <span class="me-3">昇進先:</span>
-                                    <span class="status-indicator status-success">
-                                        {{ target_user.current_salary_grade.promotion_target.name }}
-                                    </span>
-                                </div>
-                                
-                                {% with promotion_status=user.promotion_status %}
-                                    {% if promotion_status.can_promote %}
-                                        <div class="alert alert-success">
-                                            <i class="bi bi-check-circle"></i>
-                                            <strong>昇進条件達成！</strong> {{ target_user.current_salary_grade.promotion_target.name }}へ昇進可能です。
-                                        </div>
-                                    {% else %}
-                                        <div class="alert alert-info">
-                                            <i class="bi bi-info-circle"></i>
-                                            <strong>昇進条件未達成</strong> 
-                                            不足スキル: {{ promotion_status.missing_skills.count }}個
-                                        </div>
-                                        
-                                        {% if promotion_status.missing_skills %}
-                                            <div class="missing-skills mt-2">
-                                                <small class="text-muted">必要なスキル:</small>
-                                                <div class="mt-1">
-                                                    {% for skill in promotion_status.missing_skills %}
-                                                        <span class="status-indicator status-warning me-1 mb-1">
-                                                            {{ skill.name }}
-                                                        </span>
-                                                    {% endfor %}
-                                                </div>
-                                            </div>
-                                        {% endif %}
-                                    {% endif %}
-                                {% endwith %}
-                            </div>
-                        </div>
-                    {% endif %}
                 </div>
             </div>
 
@@ -230,21 +196,24 @@
                         {% if user_skills %}
                             <div class="skills-grid">
                                 {% for user_skill in user_skills %}
-                                    <div class="skill-card">
-                                        <div class="skill-info">
-                                            <div class="skill-name">{{ user_skill.skill.name }}</div>
-                                            <small class="skill-date">{{ user_skill.acquired_date|date:"Y/n/j" }}</small>
-                                            <small class="skill-category text-muted">{{ user_skill.skill.get_category_display }}</small>
+                                    <a href="{% url 'salary:admin_skill_detail' user_skill.skill.id %}" class="text-decoration-none text-reset interactive-card-link">
+                                        <div class="interactive-card interactive-card-gray skill-card">
+                                            <div class="skill-info">
+                                                <div class="skill-name">{{ user_skill.skill.name }}</div>
+                                                <small class="skill-date">{{ user_skill.acquired_date|date:"Y/n/j" }}</small>
+                                                <small class="skill-category text-muted">{{ user_skill.skill.get_category_display }}</small>
+                                            </div>
+                                            <div class="skill-actions">
+                                                <button type="button" 
+                                                        class="btn-gradient-danger btn-sm revoke-skill-btn"
+                                                        data-user-skill-id="{{ user_skill.id }}"
+                                                        data-skill-name="{{ user_skill.skill.name|escapejs }}"
+                                                        onclick="event.preventDefault(); event.stopPropagation();">
+                                                    <i class="bi bi-x"></i> 取消
+                                                </button>
+                                            </div>
                                         </div>
-                                        <div class="skill-actions">
-                                            <button type="button" 
-                                                    class="btn-gradient-danger btn-sm revoke-skill-btn"
-                                                    data-user-skill-id="{{ user_skill.id }}"
-                                                    data-skill-name="{{ user_skill.skill.name|escapejs }}">
-                                                <i class="bi bi-x"></i> 取消
-                                            </button>
-                                        </div>
-                                    </div>
+                                    </a>
                                 {% endfor %}
                             </div>
                         {% else %}
@@ -287,6 +256,7 @@
         <!-- 右カラム：履歴・統計 -->
         <div class="col-lg-4">
             <!-- 昇進条件達成グレード -->
+            {% if eligible_grades or inegible_grades %}
             <div class="card-base mb-4">
                 <div class="card-header-success">
                     <h6 class="mb-0">
@@ -299,28 +269,22 @@
                     <div class="row">
                     {% for grade in eligible_grades %}
                         <div class="col-12 mb-2">
-                        <div class="d-flex justify-content-between align-items-center p-2 bg-light rounded">
-                            <div class="flex-grow-1">
-                            <a href="{% url 'salary:admin_grade_detail' grade.id %}"
-                                class="text-decoration-none text-dark fw-semibold">
-                                {{ grade.name }}
-                            </a>
-                            <small class="text-muted d-block">レベル {{ grade.level }}</small>
+                        <a href="{% url 'salary:admin_grade_detail' grade.id %}" class="interactive-card-link text-decoration-none">
+                            <div class="interactive-card interactive-card-gray d-flex justify-content-between align-items-center">
+                                <div class="flex-grow-1">
+                                    <div class="text-dark fw-semibold">{{ grade.name }}</div>
+                                    <small class="text-muted d-block">レベル {{ grade.level }}</small>
+                                </div>
+                                <div class="text-end">
+                                    <div class="text-success fw-semibold">¥{{ grade.hourly_wage|floatformat:0 }}/時</div>
+                                    <span class="badge bg-warning">
+                                        <i class="bi bi-check"></i> 条件達成
+                                    </span>
+                                </div>
                             </div>
-                            <div class="text-end">
-                            <div class="text-success fw-semibold">¥{{ grade.hourly_wage|floatformat:0 }}/時</div>
-                            <span class="badge bg-warning">
-                                <i class="bi bi-check"></i> 条件達成
-                            </span>
-                            </div>
-                        </div>
+                        </a>
                         </div>
                     {% endfor %}
-                    </div>
-                {% else %}
-                    <div class="text-center py-3 text-muted">
-                    <i class="bi bi-info-circle"></i>
-                    <p class="mb-0 mt-2">昇進条件を達成しているグレードはありません</p>
                     </div>
                 {% endif %}
 
@@ -329,59 +293,70 @@
                     {% for entry in ineligible_grades %}
                         {% with grade=entry.grade missing_skills=entry.missing_skills %}
                         <div class="col-12 mb-2">
-                            <div class="d-flex justify-content-between align-items-center bg-light rounded p-2">
-                                <div class="flex-grow-1">
-                                <a href="{% url 'salary:admin_grade_detail' grade.id %}"
-                                    class="text-decoration-none text-dark fw-semibold">
-                                    {{ grade.name }}
-                                </a>
-                                <small class="text-muted d-block">レベル {{ grade.level }}</small>
+                            <a href="{% url 'salary:admin_grade_detail' grade.id %}" class="interactive-card-link text-decoration-none">
+                                <div class="interactive-card interactive-card-gray d-flex justify-content-between align-items-center">
+                                    <div class="flex-grow-1">
+                                        <div class="text-dark fw-semibold">{{ grade.name }}</div>
+                                        <small class="text-muted d-block">レベル {{ grade.level }}</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="fw-semibold">¥{{ grade.hourly_wage|floatformat:0 }}/時</div>
+                                        <span class="badge bg-secondary">
+                                            <i class="bi bi-dash-circle"></i> 条件未達成
+                                        </span>
+                                    </div>
                                 </div>
-                                <div class="text-end">
-                                <div class="fw-semibold">¥{{ grade.hourly_wage|floatformat:0 }}/時</div>
-                                <span class="badge bg-secondary">
-                                    <i class="bi bi-dash-circle"></i> 条件未達成
-                                </span>
-                                </div>
-                            </div>
+                            </a>
                         </div>
                         {% endwith %}
                     {% endfor %}
                     </div>
-                    {% else %}
-                    <div class="text-center py-3 text-muted">
-                    <i class="bi bi-info-circle"></i>
-                    <p class="mb-0 mt-2">条件未達成の候補グレードはありません</p>
-                    </div>
-                    {% endif %}
+                {% endif %}
                 </div>
             </div>
+            {% endif %}
 
-            <!-- グレード変更履歴 -->
+            <!-- 給与グレード履歴 -->
             <div class="card-base mb-4">
                 <div class="card-header-info">
                     <h6 class="mb-0">
-                        <i class="bi bi-clock-history"></i> グレード変更履歴
+                        <i class="bi bi-clock-history"></i> 給与グレード履歴
                     </h6>
                 </div>
                 <div class="card-body-standard">
                     {% if grade_history %}
-                        <div class="timeline">
+                        <div class="grade-history-list">
                             {% for history in grade_history %}
-                                <div class="timeline-item">
-                                    <div class="timeline-marker"></div>
-                                    <div class="timeline-content">
-                                        <div class="fw-semibold">{{ history.salary_grade.name }}</div>
-                                        <small class="text-muted">{{ history.start_date|date:"Y/n/j" }}</small>
-                                        {% if history.changed_by %}
-                                            <small class="d-block text-muted">by {{ history.changed_by.name }}</small>
-                                        {% endif %}
+                                <a href="{% url 'salary:admin_grade_detail' history.salary_grade.id %}" class="text-decoration-none text-reset interactive-card-link">
+                                    <div class="interactive-card interactive-card-gray grade-history-item {% if forloop.first %}current-grade-item{% endif %}">
+                                        <div class="d-flex align-items-center justify-content-between">
+                                            <div class="grade-info">
+                                                <div class="d-flex align-items-center">
+                                                    <h6 class="mb-0 me-2">{{ history.salary_grade.name }}</h6>
+                                                    {% if forloop.first %}
+                                                        <small class="status-indicator status-success">現在</small>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="grade-details mt-1">
+                                                    <span class="text-muted">レベル{{ history.salary_grade.level }}</span>
+                                                </div>
+                                            </div>
+                                            <div class="grade-date text-end">
+                                                <small class="text-muted">昇進日: {{ history.effective_date|date:"Y/n/j" }}</small>
+                                                {% if history.changed_by %}
+                                                    <small class="d-block text-muted">変更者: {{ history.changed_by.name }}</small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
+                                </a>
                             {% endfor %}
                         </div>
                     {% else %}
-                        <p class="text-muted">グレード変更履歴がありません。</p>
+                        <div class="text-center py-3">
+                            <i class="bi bi-clock-history text-muted" style="font-size: 2rem;"></i>
+                            <p class="text-muted mt-2 mb-0">グレード変更履歴がありません。</p>
+                        </div>
                     {% endif %}
                 </div>
             </div>
@@ -396,19 +371,25 @@
                 <div class="card-body-standard">
                     <div class="stats-row">
                         <span class="stats-label">習得スキル数:</span>
-                        <span class="stats-value">{{ user_skills.count }}個</span>
+                        <span class="stats-value">{{ acquired_skills_count }}個</span>
                     </div>
                     <div class="stats-row">
-                        <span class="stats-label">申告回数:</span>
-                        <span class="stats-value">{{ application_count }}回</span>
-                    </div>
-                    <div class="stats-row">
-                        <span class="stats-label">承認率:</span>
+                        <span class="stats-label">勤続年数:</span>
                         <span class="stats-value">
-                            {% if application_count > 0 %}
-                                {{ approval_rate|floatformat:1 }}%
+                            {% if service_years %}
+                                {{ service_years }}年
                             {% else %}
-                                -
+                                <span class="text-muted">入社日未設定</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="stats-row">
+                        <span class="stats-label">総出勤日数:</span>
+                        <span class="stats-value">
+                            {% if total_attendance_days is not None %}
+                                {{ total_attendance_days }}日
+                            {% else %}
+                                <span class="text-muted">データなし</span>
                             {% endif %}
                         </span>
                     </div>
@@ -439,5 +420,6 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'common/js/utils.js' %}"></script>
 <script src="{% static 'salary/js/admin-user-detail.js' %}"></script>
 {% endblock %}

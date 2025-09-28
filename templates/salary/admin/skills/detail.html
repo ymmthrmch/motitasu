@@ -45,6 +45,9 @@
         </div>
         {% if user.is_staff or user.is_superuser %}
             <div class="text-end">
+                <a href="{% url 'salary:admin_skills' %}" class="btn-gradient-info me-2">
+                    一覧へ戻る
+                </a>
                 <a href="{% url 'salary:admin_skill_edit' skill.id %}" class="btn-gradient-primary">
                     <i class="bi bi-pencil"></i> 編集
                 </a>
@@ -112,27 +115,23 @@
                                     {% for holder in holders %}
                                     <tr>
                                         <td>
-                                            {% if user.is_staff or user.is_superuser %}
-                                                <a href="{% url 'salary:admin_user_detail' holder.user.id %}" 
-                                                   class="text-decoration-none">
-                                                    <i class="bi bi-person"></i> {{ holder.user.name }}
-                                                </a>
-                                            {% else %}
+                                            <a href="{% url 'salary:admin_user_detail' holder.user.id %}" class="text-decoration-none text-dark">
                                                 <i class="bi bi-person"></i> {{ holder.user.name }}
-                                            {% endif %}
+                                            </a>
                                         </td>
                                         <td>{{ holder.acquired_date|date:"Y年n月j日" }}</td>
                                         {% if user.is_staff or user.is_superuser %}
-                                            <td>
-                                                {% if holder.approved_by %}
-                                                    <span class="text-success">
-                                                        <i class="bi bi-check-circle"></i> {{ holder.approved_by.name }}
-                                                    </span>
-                                                {% else %}
-                                                    <span class="text-muted">自動付与</span>
-                                                {% endif %}
-                                            </td>
-                                        {% endif %}
+                                        <td>
+                                            {% if holder.approved_by %}
+                                                <a href="{% url 'salary:admin_user_detail' holder.approved_by.id %}" class="text-decoration-none text-dark">
+                                                    <i class="bi bi-check-circle"></i> {{ holder.approved_by.name }}
+                                                </a>
+                                            {% else %}
+                                                <span class="text-muted">データなし</span>
+                                            {% endif %}
+                                        </td>
+                                    </a>
+                                    {% endif %}
                                     </tr>
                                     {% endfor %}
                                 </tbody>
@@ -161,16 +160,17 @@
                 <div class="card-body-standard">
                     {% if required_grades %}
                         {% for grade in required_grades %}
-                            <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
-                                <div>
-                                    <a href="{% url 'salary:admin_grade_detail' grade.id %}" 
-                                       class="text-decoration-none fw-semibold">{{ grade.name }}</a>
-                                    <small class="text-muted d-block">レベル {{ grade.level }}</small>
+                            <a href="{% url 'salary:admin_grade_detail' grade.id %}" class="interactive-card-link text-decoration-none">
+                                <div class="interactive-card interactive-card-success d-flex justify-content-between align-items-center mb-2">
+                                    <div>
+                                        <div class="text-dark fw-semibold">{{ grade.name }}</div>
+                                        <small class="text-muted d-block">レベル {{ grade.level }}</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="text-success fw-semibold">¥{{ grade.hourly_wage|floatformat:0 }}/時</div>
+                                    </div>
                                 </div>
-                                <div class="text-end">
-                                    <div class="text-success fw-semibold">¥{{ grade.hourly_wage|floatformat:0 }}/時</div>
-                                </div>
-                            </div>
+                            </a>
                         {% endfor %}
                     {% else %}
                         <div class="text-center py-3 text-muted">

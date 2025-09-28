@@ -151,11 +151,6 @@
     transition: var(--transition-standard);
 }
 
-.activity-item:hover {
-    background: var(--bg-secondary);
-    border-radius: var(--border-radius-sm);
-}
-
 .activity-item:last-child {
     border-bottom: none;
 }

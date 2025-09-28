@@ -44,13 +44,13 @@
 
         <div class="col-lg-3 col-md-6 mb-3">
             <div class="card-base">
-                <div class="card-header-success">
+                <div class="card-header-info">
                     <h6 class="mb-0">
                         <i class="bi bi-award"></i> 総スキル数
                     </h6>
                 </div>
                 <div class="card-body-standard text-center">
-                    <div class="display-info success">{{ total_skills }}</div>
+                    <div class="display-info info">{{ total_skills }}</div>
                     <div class="sub-info">個のスキル</div>
                 </div>
             </div>
@@ -73,13 +73,13 @@
         <div class="col-lg-3 col-md-6 mb-3">
             <div class="card-base">
                 {% if pending_applications > 0 %}
-                    <div class="card-header-warning">
+                    <div class="card-header-danger">
                         <h6 class="mb-0">
                             <i class="bi bi-exclamation-triangle"></i> 承認待ち
                         </h6>
                     </div>
                     <div class="card-body-standard text-center">
-                        <div class="display-info warning">{{ pending_applications }}</div>
+                        <div class="display-info danger">{{ pending_applications }}</div>
                         <div class="sub-info">件の申告</div>
                         <div class="mt-2">
                             <a href="{% url 'salary:admin_applications' %}" class="btn-gradient-primary btn-sm">

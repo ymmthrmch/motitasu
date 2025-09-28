@@ -205,8 +205,20 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // CSRFトークン取得関数
+    // CSRFトークン取得関数（共通utilsを使用）
     function getCsrfToken() {
+        // まず共通のgetCsrfToken関数を試す
+        if (typeof window.getCsrfToken === 'function') {
+            return window.getCsrfToken();
+        }
+        
+        // フォールバック: トークンを直接取得
+        const token = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (token) {
+            return token.value;
+        }
+        
+        // クッキーからの取得
         const name = 'csrftoken';
         let cookieValue = null;
         if (document.cookie && document.cookie !== '') {

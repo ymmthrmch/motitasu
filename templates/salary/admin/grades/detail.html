@@ -46,13 +46,16 @@
                 </span>
             {% endif %}
         </div>
-        {% if user.is_staff or user.is_superuser %}
-            <div class="text-end">
-                <a href="{% url 'salary:admin_grade_edit' grade.id %}" class="btn-gradient-primary">
-                    <i class="bi bi-pencil"></i> 編集
-                </a>
-            </div>
-        {% endif %}
+        <div class="text-end">
+            <a href="{% url 'salary:admin_grades' %}" class="btn-gradient-info me-2">
+                一覧へ戻る
+            </a>
+            {% if user.is_staff or user.is_superuser %}
+            <a href="{% url 'salary:admin_grade_edit' grade.id %}" class="btn-gradient-primary">
+                <i class="bi bi-pencil"></i> 編集
+            </a>
+            {% endif %}
+        </div>
     </div>
 
     <div class="row">
@@ -105,17 +108,16 @@
                         <div class="row">
                             {% for skill in required_skills %}
                                 <div class="col-md-6 mb-3">
-                                    <div class="d-flex align-items-center p-2 bg-light rounded">
-                                        <div class="flex-grow-1">
-                                            <a href="{% url 'salary:admin_skill_detail' skill.id %}" 
-                                               class="text-decoration-none fw-semibold text-dark">
-                                                {{ skill.name }}
-                                            </a>
+                                    <a href="{% url 'salary:admin_skill_detail' skill.id %}" class="interactive-card-link text-decoration-none">
+                                        <div class="interactive-card interactive-card-info d-flex align-items-center">
+                                            <div class="flex-grow-1">
+                                                <div class="fw-semibold text-dark">{{ skill.name }}</div>
+                                            </div>
+                                            <div class="me-2">
+                                                <span class="status-indicator status-info">{{ skill.get_category_display }}</span>
+                                            </div>
                                         </div>
-                                        <div class="me-2">
-                                            <span class="status-indicator status-info">{{ skill.get_category_display }}</span>
-                                        </div>
-                                    </div>
+                                    </a>
                                 </div>
                             {% endfor %}
                         </div>
@@ -220,19 +222,20 @@
                             <div class="row">
                                 {% for eligible_user in eligible_users %}
                                     <div class="col-12 mb-2">
-                                        <div class="d-flex align-items-center p-2 bg-light rounded">
-                                            <div class="flex-grow-1">
-                                                <a href="{% url 'salary:admin_user_detail' eligible_user.id %}" 
-                                                   class="text-decoration-none text-dark fw-semibold">
-                                                    <i class="bi bi-person"></i> {{ eligible_user.name }}
-                                                </a>
+                                        <a href="{% url 'salary:admin_user_detail' eligible_user.id %}" class="interactive-card-link text-decoration-none">
+                                            <div class="interactive-card interactive-card-success d-flex align-items-center">
+                                                <div class="flex-grow-1">
+                                                    <div class="text-dark fw-semibold">
+                                                        <i class="bi bi-person"></i> {{ eligible_user.name }}
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <span class="badge bg-success">
+                                                        <i class="bi bi-check"></i> 条件達成
+                                                    </span>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <span class="badge bg-success">
-                                                    <i class="bi bi-check"></i> 条件達成
-                                                </span>
-                                            </div>
-                                        </div>
+                                        </a>
                                     </div>
                                 {% endfor %}
                             </div>
@@ -256,16 +259,17 @@
                 <div class="card-body-standard">
                     {% if next_grades %}
                         {% for next_grade in next_grades %}
-                            <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
-                                <div>
-                                    <a href="{% url 'salary:admin_grade_detail' next_grade.id %}" 
-                                       class="text-decoration-none fw-semibold">{{ next_grade.name }}</a>
-                                    <small class="text-muted d-block">レベル {{ next_grade.level }}</small>
+                            <a href="{% url 'salary:admin_grade_detail' next_grade.id %}" class="interactive-card-link text-decoration-none">
+                                <div class="interactive-card interactive-card-warning d-flex justify-content-between align-items-center mb-2">
+                                    <div>
+                                        <div class="text-dark fw-semibold">{{ next_grade.name }}</div>
+                                        <small class="text-muted d-block">レベル {{ next_grade.level }}</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="text-success fw-semibold">¥{{ next_grade.hourly_wage|floatformat:0 }}/時</div>
+                                    </div>
                                 </div>
-                                <div class="text-end">
-                                    <div class="text-success fw-semibold">¥{{ next_grade.hourly_wage|floatformat:0 }}/時</div>
-                                </div>
-                            </div>
+                            </a>
                         {% endfor %}
                     {% else %}
                         <div class="text-center py-3 text-muted">
@@ -286,16 +290,17 @@
                 </div>
                 <div class="card-body-standard">
                     {% for from_grade in promotion_from_grades %}
-                        <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
-                            <div>
-                                <a href="{% url 'salary:admin_grade_detail' from_grade.id %}" 
-                                   class="text-decoration-none fw-semibold">{{ from_grade.name }}</a>
-                                <small class="text-muted d-block">レベル {{ from_grade.level }}</small>
+                        <a href="{% url 'salary:admin_grade_detail' from_grade.id %}" class="interactive-card-link text-decoration-none">
+                            <div class="interactive-card interactive-card-gray d-flex justify-content-between align-items-center mb-2">
+                                <div>
+                                    <div class="text-dark fw-semibold">{{ from_grade.name }}</div>
+                                    <small class="text-muted d-block">レベル {{ from_grade.level }}</small>
+                                </div>
+                                <div class="text-end">
+                                    <div class="text-success fw-semibold">¥{{ from_grade.hourly_wage|floatformat:0 }}/時</div>
+                                </div>
                             </div>
-                            <div class="text-end">
-                                <div class="text-success fw-semibold">¥{{ from_grade.hourly_wage|floatformat:0 }}/時</div>
-                            </div>
-                        </div>
+                        </a>
                     {% endfor %}
                 </div>
             </div>

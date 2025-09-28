@@ -368,21 +368,30 @@ class AdminGradeDetailView(DetailView):
         total_users = User.objects.count()
         context['occupation_rate'] = (context['members_count'] / total_users * 100) if total_users > 0 else 0
         
-        # 昇進条件達成者（このグレードへの昇進条件を満たしているユーザー）
+        # 昇進条件達成者（このグレードへの昇進条件を満たし、現在のグレードから昇進可能なユーザー）
         if context['required_skills']:
             required_skill_ids = set(self.object.required_skills.values_list('id', flat=True))
             eligible_users_list = []
             for user in User.objects.prefetch_related('userskill_set'):
+                # 必要スキルをすべて持っているかチェック
                 user_skill_ids = set(user.userskill_set.values_list('skill_id', flat=True))
                 if required_skill_ids.issubset(user_skill_ids):
-                    eligible_users_list.append(user)
+                    # ユーザーの現在の給与グレードを取得
+                    current_grade = user.current_salary_grade
+                    if current_grade and current_grade.next_possible_grades.filter(id=self.object.id).exists():
+                        # 現在のグレードの昇進先にこのグレードが含まれている場合のみ追加
+                        eligible_users_list.append(user)
             context['eligible_users'] = eligible_users_list
             context['eligible_users_count'] = len(eligible_users_list)
         else:
-            # 必要スキルがない場合は全ユーザーが条件達成
-            all_users = User.objects.all()
-            context['eligible_users'] = all_users
-            context['eligible_users_count'] = total_users
+            # 必要スキルがない場合でも昇進経路をチェック
+            eligible_users_list = []
+            for user in User.objects.all():
+                current_grade = user.current_salary_grade
+                if current_grade and current_grade.next_possible_grades.filter(id=self.object.id).exists():
+                    eligible_users_list.append(user)
+            context['eligible_users'] = eligible_users_list
+            context['eligible_users_count'] = len(eligible_users_list)
             
         return context
 
@@ -679,11 +688,32 @@ class AdminUserDetailView(AdminRequiredMixin, DetailView):
         context['ineligible_grades'] = ineligible_grade_entries  # ← 追加
 
         # 統計情報
-        applications = SkillApplication.objects.filter(user=user)
-        context['application_count'] = applications.count()
-        if context['application_count'] > 0:
-            approved_count = applications.filter(status='approved').count()
-            context['approval_rate'] = (approved_count / context['application_count']) * 100
+        # 習得スキル数
+        context['acquired_skills_count'] = context['user_skills'].count()
+        
+        # 勤続年数（入社日から現在まで）
+        if hasattr(user, 'hire_date') and user.hire_date:
+            from datetime import date
+            today = date.today()
+            service_days = (today - user.hire_date).days
+            context['service_years'] = round(service_days / 365.25, 1)  # 年数（小数点1桁）
+            context['service_days'] = service_days
+        else:
+            context['service_years'] = None
+            context['service_days'] = None
+        
+        # 総出勤日数（timeclockアプリのAttendanceRecordから取得）
+        try:
+            from timeclock.models import AttendanceRecord
+            # 出勤記録の総数を取得
+            total_attendance = AttendanceRecord.objects.filter(
+                user=user,
+                time_out__isnull=False  # 退勤記録がある = 完了した出勤
+            ).count()
+            context['total_attendance_days'] = total_attendance
+        except ImportError:
+            # timeclockアプリが存在しない場合
+            context['total_attendance_days'] = None
 
         return context
 
