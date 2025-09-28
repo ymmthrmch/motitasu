@@ -67,8 +67,16 @@ class WorkTimeService:
             hourly_wage = self.user.current_hourly_wage
         except (ValueError, AttributeError):
             hourly_wage = None
-        work_hours = result['work_time'].total_seconds() / 3600
-        wage = int(work_hours * hourly_wage) if hourly_wage else 0
+        
+        work_hours_float = result['work_time'].total_seconds() / 3600
+        work_hours = round(work_hours_float, 2)  # 小数点2桁に丸め
+        
+        if hourly_wage:
+            from decimal import Decimal
+            work_hours_decimal = Decimal(str(work_hours))
+            wage = int(work_hours_decimal * hourly_wage)
+        else:
+            wage = 0
         
         return {
             'date': target_date,

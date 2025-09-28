@@ -76,9 +76,9 @@
                         data-reaction-type="{{ reaction_type }}">
                     <span>{{ emoji }}</span>
                     <span class="reaction-count">
-                        {% for reaction_type_key, count in message.reaction_summary.items %}
-                            {% if reaction_type_key == reaction_type %}{{ count }}{% endif %}
-                        {% empty %}0{% endfor %}
+                        {% for react_type, count in message.reaction_summary.items %}
+                            {% if react_type == reaction_type %}{{ count }}{% endif %}
+                        {% endfor %}
                     </span>
                 </button>
                 {% endfor %}

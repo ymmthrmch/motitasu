@@ -23,7 +23,6 @@ def message_list(request):
                 content=content,
                 show_name=show_name
             )
-            messages.success(request, 'メッセージを投稿しました。')
         else:
             messages.error(request, 'メッセージ内容を入力してください。')
         return redirect('bulletin_board:message_list')
@@ -231,11 +230,15 @@ def delete_message(request):
 
 # ヘルパー関数
 def get_reaction_summary(message):
-    """メッセージのリアクション数を取得"""
+    """メッセージのリアクション数を取得（全てのリアクションタイプを0で初期化）"""
+    # 全てのリアクションタイプを0で初期化
+    summary = {reaction_type: 0 for reaction_type, _ in Reaction.REACTION_CHOICES}
+    
+    # 実際のリアクション数を上書き
     reaction_counts = message.get_reaction_counts()
-    summary = {}
     for reaction in reaction_counts:
         summary[reaction['reaction_type']] = reaction['count']
+    
     return summary
 
 def get_user_reactions(message, user):

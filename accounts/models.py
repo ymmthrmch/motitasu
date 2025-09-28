@@ -228,8 +228,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     
     @property
     def current_hourly_wage(self):
-        """現在の時給（給与グレードから取得、必須）"""
+        """現在の時給（給与グレードから取得、設定されていない場合はNone）"""
         current_grade = self.current_salary_grade
         if current_grade:
             return current_grade.hourly_wage
-        raise ValueError(f"ユーザー {self.name} の給与グレードが設定されていません")
+        return None

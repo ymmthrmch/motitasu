@@ -45,7 +45,15 @@
                     <h5>今月の給与</h5>
                 </div>
                 <div class="card-body">
-                    <div class="main-info animate-value">{{ monthly_summary.total_wage|floatformat:0|default:"0" }}円</div>
+                    {% if user.current_hourly_wage %}
+                        <div class="main-info animate-value">{{ monthly_summary.total_wage|floatformat:0|default:"0" }}円</div>
+                    {% else %}
+                        <div class="alert alert-warning text-center mb-3">
+                            <i class="bi bi-exclamation-triangle fs-1 mb-3 d-block"></i>
+                            <h6>給与グレード未設定</h6>
+                            <p class="mb-0">管理者にお問い合わせください。</p>
+                        </div>
+                    {% endif %}
                     <div class="stats-row">
                         <span class="label">月勤務日数:</span>
                         <span class="value">{{ monthly_summary.work_days }}日</span>
@@ -436,17 +444,16 @@
                     <div class="mb-3">
                         <label for="targetIncome" class="form-label">目標月収（円）</label>
                         <input type="number" 
-                               class="modal-textarea" 
+                               class="form-control" 
                                id="targetIncome" 
                                name="target_income" 
                                placeholder="例: 200000"
                                min="1"
                                max="9999999"
-                               style="height: auto; resize: none;"
                                required>
                         <div class="form-text text-muted">
                             <i class="bi bi-info-circle"></i>
-                            現在の時給: {{ user.current_hourly_wage }}円
+                            現在の時給: {% if user.current_hourly_wage %}{{ user.current_hourly_wage }}円{% else %}未設定{% endif %}
                         </div>
                     </div>
                     <div class="status-indicator status-info">
@@ -456,7 +463,6 @@
                 </div>
                 <div class="modal-footer">
                     <div id="targetMessage" class="me-auto"></div>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
                     <button type="submit" class="modal-submit-btn" id="setTargetSubmitBtn">
                         <i class="bi bi-check"></i> 設定する
                     </button>
