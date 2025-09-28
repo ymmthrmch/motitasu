@@ -6,6 +6,3 @@ from django.http import HttpResponse
 def home(request):
     """ホーム画面 - 伝言板へリダイレクト"""
     return redirect('bulletin_board:message_list')
-
-def health(request):
-    return HttpResponse("Motivation is essential for employees.")

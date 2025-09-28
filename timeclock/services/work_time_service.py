@@ -63,7 +63,10 @@ class WorkTimeService:
         result = self._calculate_work_and_break_time(records)
         
         # 時給から給与を計算
-        hourly_wage = self.user.hourly_wage if hasattr(self.user, 'hourly_wage') else None
+        try:
+            hourly_wage = self.user.current_hourly_wage
+        except (ValueError, AttributeError):
+            hourly_wage = None
         work_hours = result['work_time'].total_seconds() / 3600
         wage = int(work_hours * hourly_wage) if hourly_wage else 0
         

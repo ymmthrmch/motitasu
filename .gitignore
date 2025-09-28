@@ -27,6 +27,7 @@ staticfiles/
 # CLAUDE 特有
 .claude/
 CLAUDE.md
+.clinerules
 
 # OS特有
 .DS_Store

@@ -667,9 +667,16 @@ class AdminUserDetailView(AdminRequiredMixin, DetailView):
             for grade in next_possible_grades:
                 required_skill_ids = set(grade.required_skills.values_list('id', flat=True))
 
+                total_required_skills = len(required_skill_ids)
+                acquired_skills_for_grade = len(required_skill_ids & user_skill_ids)
+                
                 if not required_skill_ids or required_skill_ids.issubset(user_skill_ids):
                     # 必要スキルなし、またはすべて満たしている → 達成
-                    eligible_grades.append(grade)
+                    eligible_grades.append({
+                        'grade': grade,
+                        'acquired_count': acquired_skills_for_grade,
+                        'required_count': total_required_skills,
+                    })
                 else:
                     # 未達成 → 不足スキルを抽出してcontextに渡す
                     missing_ids = required_skill_ids - user_skill_ids
@@ -678,14 +685,16 @@ class AdminUserDetailView(AdminRequiredMixin, DetailView):
                     ineligible_grade_entries.append({
                         'grade': grade,
                         'missing_skills': list(missing_skills_qs),
+                        'acquired_count': acquired_skills_for_grade,
+                        'required_count': total_required_skills,
                     })
 
         # レベル順ソート
-        eligible_grades.sort(key=lambda x: x.level)
+        eligible_grades.sort(key=lambda x: x['grade'].level)
         ineligible_grade_entries.sort(key=lambda e: e['grade'].level)
 
         context['eligible_grades'] = eligible_grades
-        context['ineligible_grades'] = ineligible_grade_entries  # ← 追加
+        context['ineligible_grades'] = ineligible_grade_entries
 
         # 統計情報
         # 習得スキル数
