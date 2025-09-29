@@ -69,9 +69,12 @@ class LeaderboardService:
         # キャッシュデータから最新の日付を取得して更新開始日を決定
         cached_data = entry.cached_daily_minutes or {}
         if cached_data:
-            # キャッシュデータの最新日の翌日から更新
+            # キャッシュデータの最新日の翌日を計算
             latest_cached_day = max(int(day) for day in cached_data.keys())
-            update_date = date(year, month, latest_cached_day) + timedelta(days=1)
+            cache_next_date = date(year, month, latest_cached_day) + timedelta(days=1)
+            
+            # キャッシュの翌日と今日を比較して、より過去の方から開始
+            update_date = min(cache_next_date, today)
         else:
             # キャッシュデータがない場合は月初から
             update_date = date(year, month, 1)

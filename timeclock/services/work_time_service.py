@@ -62,6 +62,11 @@ class WorkTimeService:
         # 労働時間と休憩時間を計算
         result = self._calculate_work_and_break_time(records)
         
+        # 退勤打刻がない場合は0分で計算
+        if not result['has_clock_out']:
+            result['work_time'] = timedelta(0)
+            result['break_time'] = timedelta(0)
+        
         # 時給から給与を計算
         try:
             hourly_wage = self.user.current_hourly_wage
