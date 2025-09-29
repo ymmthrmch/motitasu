@@ -66,9 +66,15 @@ class LeaderboardService:
         # WorkTimeServiceを使用して労働時間データを取得
         service = WorkTimeService(user)
         
-        # last_updatedの翌日から更新開始
-        update_date = entry.last_updated.astimezone(self.jst).date() + timedelta(days=1)
+        # キャッシュデータから最新の日付を取得して更新開始日を決定
         cached_data = entry.cached_daily_minutes or {}
+        if cached_data:
+            # キャッシュデータの最新日の翌日から更新
+            latest_cached_day = max(int(day) for day in cached_data.keys())
+            update_date = date(year, month, latest_cached_day) + timedelta(days=1)
+        else:
+            # キャッシュデータがない場合は月初から
+            update_date = date(year, month, 1)
         
         # 月末日を計算
         last_day_of_month = calendar.monthrange(year, month)[1]
@@ -195,3 +201,92 @@ class LeaderboardService:
                 'total_minutes': 0,
                 'total_participants': 0
             }
+    
+    def recalculate_user_stats_from_scratch(self, user=None, year: int = None, month: int = None) -> tuple[Optional[LeaderboardEntry], Optional[Dict[str, Any]]]:
+        """
+        キャッシュを使わずに月初から労働時間を完全再計算してキャッシュを保存
+        
+        Args:
+            user: ユーザーオブジェクト（Noneの場合はインスタンスのuserを使用）
+            year: 年（Noneの場合は現在の年）
+            month: 月（Noneの場合は現在の月）
+        
+        Returns:
+            (entry, error_response): 成功時は(entry, None)、失敗時は(None, error_dict)
+        """
+        user = user or self.user
+        if not user:
+            return None, {
+                'success': False,
+                'status': 'error',
+                'error': 'ユーザーが指定されていません'
+            }
+        
+        now = timezone.now().astimezone(self.jst)
+        today = now.date()
+        year = year or now.year
+        month = month or now.month
+        
+        # エントリの取得
+        try:
+            entry = LeaderboardEntry.objects.get(
+                user=user,
+                year=year,
+                month=month
+            )
+        except LeaderboardEntry.DoesNotExist:
+            return None, {
+                'success': False,
+                'status': 'not_joined',
+                'error': 'ランキングに参加していません。',
+                'year': year,
+                'month': month,
+            }
+        except Exception as e:
+            return None, {
+                'success': False,
+                'status': 'error',
+                'error': str(e)
+            }
+        
+        # WorkTimeServiceを使用して労働時間データを取得
+        service = WorkTimeService(user)
+        
+        # 月初から完全再計算
+        month_start = date(year, month, 1)
+        
+        # 月末日を計算
+        last_day_of_month = calendar.monthrange(year, month)[1]
+        month_end = date(year, month, last_day_of_month)
+        
+        # 今日か月末のどちらか早い方まで計算
+        end_date = min(today, month_end)
+        
+        # キャッシュデータを初期化
+        cached_data = {}
+        
+        # 月初から指定期間の日付を計算
+        current_date = month_start
+        while current_date <= end_date:
+            daily_summary = service.get_daily_summary(current_date)
+            if daily_summary['work_hours'] > 0:
+                # 日付をキーとして分数を保存
+                minutes = int(daily_summary['work_time'].total_seconds() / 60)
+                cached_data[str(current_date.day)] = minutes
+            
+            current_date += timedelta(days=1)
+        
+        # 合計時間を計算
+        total_minutes = sum(cached_data.values())
+        
+        # エントリを更新（last_updatedも現在時刻で更新）
+        entry.cached_daily_minutes = cached_data
+        entry.total_minutes = total_minutes
+        entry.last_updated = now
+        entry.save()
+        
+        return entry, {
+            'success': True,
+            'status': 'recalculated_from_scratch',
+            'message': f'{user.name}の労働時間を完全再計算しました。'
+        }

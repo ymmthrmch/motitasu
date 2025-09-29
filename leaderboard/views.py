@@ -89,7 +89,15 @@ def join(request):
     
     if created:
         service = LeaderboardService(user)
-        service.update_user_stats(year=year, month=month)
+        # 参加時に初回の完全計算を実行
+        updated_entry, response = service.recalculate_user_stats_from_scratch(year=year, month=month)
+        if not response or not response.get('success'):
+            # 参加は成功したが計算でエラーが発生した場合
+            return JsonResponse(format_leaderboard_error(
+                'calculation_error',
+                f'参加は完了しましたが、労働時間の計算でエラーが発生しました: {response.get("error", "不明なエラー")}'
+            ))
+        
         service.update_leaderboard(year=year, month=month)
         
         return JsonResponse(format_leaderboard_success(
@@ -157,30 +165,94 @@ def update(request):
     month = int(now.month)
     
     # LeaderboardServiceを使用して統計情報を更新
-    entries = LeaderboardEntry.objects.filter(year=year,month=month)
-    for entry in entries:
-        current_user = entry.user
+    entries = LeaderboardEntry.objects.filter(year=year, month=month)
+    for leaderboard_entry in entries:
+        current_user = leaderboard_entry.user
         service = LeaderboardService(current_user)
-        entry, response = service.update_user_stats(year=year, month=month)
+        updated_entry, response = service.update_user_stats(year=year, month=month)
         # エラーチェック（成功時もresponseが返るため、successフラグで判定）
         if not response or not response.get('success'):
             return JsonResponse(response or {'success': False, 'error': '不明なエラー'})
         print(f'{current_user.name}の労働時間計算成功')
     
     # ランキングを更新
-    service = LeaderboardService(user)
+    service = LeaderboardService()
     ranking_result = service.update_leaderboard(year, month)
     if not ranking_result.get('success'):
         return JsonResponse(ranking_result)
     
-    # 更新後のエントリ情報を取得
-    entry.refresh_from_db()
-    total_minutes = entry.total_minutes
-    rank = entry.rank
+    # リクエストユーザーのエントリ情報を取得（参加していない場合の処理も含む）
+    try:
+        user_entry = LeaderboardEntry.objects.get(user=user, year=year, month=month)
+        user_entry.refresh_from_db()
+        total_minutes = user_entry.total_minutes
+        rank = user_entry.rank
+        
+        return JsonResponse(format_leaderboard_success(
+            'updated',
+            '更新されました',
+            total_minutes=total_minutes,
+            rank=rank
+        ))
+    except LeaderboardEntry.DoesNotExist:
+        # 管理者が参加していない場合でもランキング更新は成功
+        return JsonResponse(format_leaderboard_success(
+            'updated',
+            'ランキングを更新しました（管理者権限）'
+        ))
 
-    return JsonResponse(format_leaderboard_success(
-        'updated',
-        '更新されました',
-        total_minutes=total_minutes,
-        rank=rank
-    ))
+@login_required
+@require_POST
+def recalculate_from_scratch(request):
+    """管理者用：キャッシュを使わずに完全再計算"""
+    user = request.user
+    
+    # 管理者権限チェック
+    if not (user.is_staff or user.is_superuser):
+        return JsonResponse({
+            'success': False,
+            'error': '管理者権限が必要です'
+        })
+    
+    now = get_jst_now()
+    year = int(now.year)
+    month = int(now.month)
+    
+    try:
+        # 該当月の全エントリを取得
+        entries = LeaderboardEntry.objects.filter(year=year, month=month)
+        success_count = 0
+        error_count = 0
+        
+        for entry in entries:
+            service = LeaderboardService(entry.user)
+            result_entry, response = service.recalculate_user_stats_from_scratch(
+                year=year, 
+                month=month
+            )
+            
+            if response and response.get('success'):
+                success_count += 1
+            else:
+                error_count += 1
+        
+        # ランキングを更新
+        service = LeaderboardService()
+        ranking_result = service.update_leaderboard(year, month)
+        
+        if error_count == 0:
+            return JsonResponse({
+                'success': True,
+                'message': f'{success_count}件のエントリを完全再計算しました。ランキングも更新されました。'
+            })
+        else:
+            return JsonResponse({
+                'success': False,
+                'message': f'完了: {success_count}件成功、{error_count}件失敗'
+            })
+            
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'エラーが発生しました: {str(e)}'
+        })

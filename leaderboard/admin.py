@@ -47,7 +47,7 @@ class LeaderboardEntryAdmin(admin.ModelAdmin):
     list_per_page = 25
     
     # 年月での絞り込みを簡単にするアクション
-    actions = ['recalculate_rankings']
+    actions = ['recalculate_rankings', 'recalculate_from_scratch']
     
     def recalculate_rankings(self, request, queryset):
         """選択されたエントリの年月でランキングを再計算"""
@@ -73,6 +73,46 @@ class LeaderboardEntryAdmin(admin.ModelAdmin):
         )
     
     recalculate_rankings.short_description = '選択した年月のランキングを再計算'
+    
+    def recalculate_from_scratch(self, request, queryset):
+        """選択されたエントリをキャッシュを使わずに完全再計算"""
+        from .services.leaderboard_service import LeaderboardService
+        
+        success_count = 0
+        error_count = 0
+        year_months = set()
+        
+        for entry in queryset:
+            service = LeaderboardService(entry.user)
+            result_entry, response = service.recalculate_user_stats_from_scratch(
+                year=entry.year, 
+                month=entry.month
+            )
+            
+            if response and response.get('success'):
+                success_count += 1
+                year_months.add((entry.year, entry.month))
+            else:
+                error_count += 1
+        
+        # 関係する年月のランキングも更新
+        service = LeaderboardService()
+        for year, month in year_months:
+            service.update_leaderboard(year, month)
+        
+        if error_count == 0:
+            self.message_user(
+                request,
+                f'{success_count}件のエントリを完全再計算しました。ランキングも更新されました。'
+            )
+        else:
+            self.message_user(
+                request,
+                f'完了: {success_count}件成功、{error_count}件失敗',
+                level='WARNING'
+            )
+    
+    recalculate_from_scratch.short_description = '選択したエントリを完全再計算（キャッシュリセット）'
     
     # カスタムクエリセット（パフォーマンス最適化）
     def get_queryset(self, request):

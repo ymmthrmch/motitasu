@@ -19,11 +19,6 @@
     background: white;
 }
 
-.ranking-item:hover {
-    background: #f8f9fa;
-    transform: scale(0.98);
-}
-
 .ranking-item:last-child {
     border-bottom: none;
 }

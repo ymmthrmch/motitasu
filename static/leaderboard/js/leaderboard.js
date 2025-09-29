@@ -11,7 +11,8 @@ function initLeaderboard() {
 function cacheElements() {
     return {
         joinBtn: document.getElementById('joinBtn'),
-        updateBtn: document.getElementById('updateBtn')
+        updateBtn: document.getElementById('updateBtn'),
+        recalculateBtn: document.getElementById('recalculateBtn')
     };
 }
 
@@ -22,6 +23,9 @@ function bindEvents(elements) {
     }
     if (elements.updateBtn) {
         elements.updateBtn.addEventListener('click', handleUpdate);
+    }
+    if (elements.recalculateBtn) {
+        elements.recalculateBtn.addEventListener('click', handleRecalculate);
     }
 }
 
@@ -109,6 +113,43 @@ async function handleUpdate() {
         }
     } catch (error) {
         console.error('更新エラー:', error);
+        showError('ネットワークエラーが発生しました');
+    } finally {
+        setButtonLoading(this, false);
+    }
+}
+
+// 完全再計算処理（管理者用）
+async function handleRecalculate() {
+    // 確認ダイアログを表示
+    const confirmMessage = '完全再計算を実行しますか？\n\n⚠️ この操作には時間がかかる場合があります\n\n・全参加者のキャッシュデータをリセット\n・月初から現在までの労働時間を再計算\n・ランキングを完全更新\n\n処理中はページを閉じないでください。';
+    
+    if (!confirm(confirmMessage)) {
+        return; // ユーザーがキャンセルした場合は処理を中断
+    }
+
+    setButtonLoading(this, true);
+
+    const start = Date.now();
+
+    try {
+        const response = await apiRequest('/leaderboard/api/recalculate-from-scratch/');
+        const data = await response.json();
+
+        const elapsed = Date.now() - start;
+        // 最低 2 秒はローディング（処理時間を考慮）
+        if (elapsed < 2000) {
+            await delay(2000 - elapsed);
+        }
+
+        if (data.success) {
+            showSuccess(data.message);
+            setTimeout(() => location.reload(), 2000);
+        } else {
+            showError(data.error || data.message || '完全再計算に失敗しました');
+        }
+    } catch (error) {
+        console.error('完全再計算エラー:', error);
         showError('ネットワークエラーが発生しました');
     } finally {
         setButtonLoading(this, false);

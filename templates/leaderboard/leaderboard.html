@@ -61,7 +61,7 @@
 
 
         <!-- 参加状態別表示 -->
-        <section class="participation-section">
+        <section class="participation-section mb-4">
             {% if not joined and is_join_period %}
                 <!-- 参加可能期間 -->
                 <div class="card-base text-center">
@@ -101,7 +101,22 @@
         </section>
 
         <!-- ランキング表示 -->
-        {% if joined and all_entries %}
+        {% if user.is_staff or user.is_superuser or joined and all_entries %}
+            {% if user.is_staff or user.is_superuser %}
+            <!-- スタッフの管理者権限での表示 -->
+            <div class="card-base mb-4">
+                <div class="card-body-standard">
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="bi bi-shield-check text-primary me-2" style="font-size: 1.5rem;"></i>
+                        <h5 class="mb-0">管理者権限でランキングを表示中</h5>
+                    </div>
+                    <p class="text-muted mb-0">
+                        <i class="bi bi-info-circle me-2"></i>
+                        あなたは管理者のため、ランキングに参加していなくても結果を確認できます。
+                    </p>
+                </div>
+            </div>
+            {% endif %}
         <section class="ranking-section">
             <div class="card-base">
                 <div class="card-header-primary">
@@ -166,12 +181,21 @@
         {% endif %}
 
         <!-- アクションエリア -->
-        {% if joined and is_current_month %}
+        {% if is_current_month %}
+        {% if user.is_superuser or user.is_staff or joined %} 
         <section class="action-section text-center mt-4">
-            <button id="updateBtn" class="btn-gradient-info">
-                <i class="bi bi-arrow-repeat"></i> ランキングを更新
-            </button>
+            <div class="d-flex justify-content-center gap-3">
+                <button id="updateBtn" class="btn-gradient-info">
+                    <i class="bi bi-arrow-repeat"></i> ランキングを更新
+                </button>
+                {% if user.is_staff or user.is_superuser %}
+                <button id="recalculateBtn" class="btn btn-gradient-warning">
+                    <i class="bi bi-calculator"></i> 完全再計算（管理者）
+                </button>
+                {% endif %}
+            </div>
         </section>
+        {% endif %}
         {% endif %}
     </div>
 

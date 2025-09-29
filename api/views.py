@@ -17,6 +17,8 @@ import hmac
 
 from timeclock.services.paid_leave_auto_processor import PaidLeaveAutoProcessor
 from bulletin_board.models import Message
+from leaderboard.models import LeaderboardEntry
+from leaderboard.services.leaderboard_service import LeaderboardService
 
 logger = logging.getLogger(__name__)
 
@@ -266,6 +268,114 @@ def cron_health_check(request):
         
     except Exception as e:
         error_msg = f'ヘルスチェックでエラーが発生: {e}'
+        logger.error(error_msg, exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': error_msg
+        }, status=500)
+
+
+@csrf_exempt
+@require_POST
+def recalculate_leaderboards(request):
+    """
+    ランキングデータ完全再計算API
+    
+    Google Apps Scriptから日次で呼び出される
+    """
+    if not verify_cron_request(request):
+        return JsonResponse({
+            'success': False,
+            'error': 'Unauthorized'
+        }, status=401)
+    
+    try:
+        jst = ZoneInfo(settings.TIME_ZONE)
+        now = timezone.now().astimezone(jst)
+        target_year = now.year
+        target_month = now.month
+        
+        logger.info(f'API経由でランキングデータ完全再計算を開始: {target_year}年{target_month}月')
+        
+        # 対象年月のエントリを取得
+        entries = LeaderboardEntry.objects.filter(
+            year=target_year,
+            month=target_month
+        ).select_related('user')
+        
+        if not entries:
+            result = {
+                'success': True,
+                'message': f'{target_year}年{target_month}月の参加者はいません',
+                'target_year': target_year,
+                'target_month': target_month,
+                'processed_count': 0,
+                'success_count': 0,
+                'error_count': 0
+            }
+            logger.info(f'ランキング再計算完了: 対象なし ({target_year}年{target_month}月)')
+            return JsonResponse(result)
+        
+        success_count = 0
+        error_count = 0
+        
+        # 各エントリを完全再計算
+        for entry in entries:
+            try:
+                service = LeaderboardService(entry.user)
+                result_entry, response = service.recalculate_user_stats_from_scratch(
+                    year=target_year,
+                    month=target_month
+                )
+                
+                if response and response.get('success'):
+                    success_count += 1
+                    logger.debug(f'ユーザー {entry.user.name} の再計算成功')
+                else:
+                    error_count += 1
+                    error_msg = response.get('error', '不明なエラー') if response else '不明なエラー'
+                    logger.error(f'ユーザー {entry.user.name} の再計算失敗: {error_msg}')
+                    
+            except Exception as e:
+                error_count += 1
+                logger.error(f'ユーザー {entry.user.name} の再計算エラー: {e}', exc_info=True)
+        
+        # ランキングを更新
+        ranking_updated = False
+        if success_count > 0:
+            service = LeaderboardService()
+            ranking_result = service.update_leaderboard(target_year, target_month)
+            
+            if ranking_result.get('success'):
+                ranking_updated = True
+                logger.info(f'ランキング更新完了: {target_year}年{target_month}月')
+            else:
+                logger.error(f'ランキング更新エラー: {ranking_result}')
+        
+        # 結果を返却
+        result = {
+            'success': True,
+            'message': f'{target_year}年{target_month}月のランキングデータ完全再計算完了',
+            'target_year': target_year,
+            'target_month': target_month,
+            'processed_count': len(entries),
+            'success_count': success_count,
+            'error_count': error_count,
+            'ranking_updated': ranking_updated
+        }
+        
+        if error_count == 0:
+            logger.info(f'ランキングデータ完全再計算完了: {target_year}年{target_month}月, 成功{success_count}件')
+        else:
+            logger.warning(
+                f'ランキングデータ完全再計算完了（エラーあり）: {target_year}年{target_month}月, '
+                f'成功{success_count}件, エラー{error_count}件'
+            )
+        
+        return JsonResponse(result)
+        
+    except Exception as e:
+        error_msg = f'ランキングデータ完全再計算でエラーが発生: {e}'
         logger.error(error_msg, exc_info=True)
         return JsonResponse({
             'success': False,

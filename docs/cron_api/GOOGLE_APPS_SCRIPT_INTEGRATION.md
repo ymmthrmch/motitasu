@@ -19,6 +19,7 @@ CRON_API_SECRET = 'your-secure-secret-key-here-32-chars-minimum'
 |---------------|------|------|
 | `/api/cron/paid-leave-grants/` | 毎日午前0時 | 有給休暇の日次付与・時効処理 |
 | `/api/cron/cleanup-pins/` | 5分ごと | 期限切れピン留めメッセージ削除 |
+| `/api/cron/recalculate-leaderboards/` | 毎日午前2時 | ランキングデータ完全再計算 |
 | `/api/cron/health-check/` | 1時間ごと | システム死活監視 |
 
 ## Google Apps Script実装例
@@ -31,7 +32,7 @@ CRON_API_SECRET = 'your-secure-secret-key-here-32-chars-minimum'
 // 設定
 const CONFIG = {
   BASE_URL: 'https://motitasu.onrender.com',
-  API_SECRET: ec710a5db03f41125aa4518267da6a3a0a13763a8db1fdbad47bd434ce01f631
+  API_SECRET: 'ec710a5db03f41125aa4518267da6a3a0a13763a8db1fdbad47bd434ce01f631'
 };
 
 /**
@@ -125,6 +126,25 @@ function cleanupExpiredPins() {
 }
 
 /**
+ * ランキングデータ完全再計算処理
+ * トリガー: 毎日午前2時（JST）
+ */
+function recalculateLeaderboards() {
+  try {
+    const result = sendCronRequest('/api/cron/recalculate-leaderboards/');
+    console.log('ランキング再計算完了:', result.message);
+    
+    // 処理があった場合のみログに記録
+    if (result.processed_count > 0) {
+      logToSpreadsheet('ランキング再計算', result);
+    }
+  } catch (error) {
+    console.error('ランキング再計算エラー:', error);
+    sendErrorNotification('ランキング再計算処理', error);
+  }
+}
+
+/**
  * システム死活監視
  * トリガー: 1時間ごと
  */
@@ -192,7 +212,13 @@ Google Apps Scriptエディターで以下のトリガーを設定:
    - 時間ベースのトリガー: 分ベースのタイマー
    - 間隔: 5分おき
 
-3. **システム死活監視**
+3. **ランキングデータ完全再計算**
+   - 関数: `recalculateLeaderboards`
+   - イベントソース: 時間主導型
+   - 時間ベースのトリガー: 日タイマー
+   - 時刻: 午前2時～午前3時
+
+4. **システム死活監視**
    - 関数: `healthCheck`
    - イベントソース: 時間主導型
    - 時間ベースのトリガー: 時間ベースのタイマー
