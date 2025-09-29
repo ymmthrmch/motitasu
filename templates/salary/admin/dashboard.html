@@ -116,7 +116,7 @@
                     {% if skills_map %}
                         <div class="skills-map">
                             {% for skill in skills_map %}
-                                <a href="{% url 'salary:admin_skill_holders' skill.id %}" class="skill-map-link">
+                                <a href="{% url 'salary:admin_skill_detail' skill.id %}" class="skill-map-link">
                                     <div class="skill-map-item">
                                         <div class="skill-header">
                                             <div class="skill-name">{{ skill.name }}</div>
@@ -141,13 +141,6 @@
                                 </a>
                             {% endfor %}
                         </div>
-                        {% if skills_map|length >= 10 %}
-                            <div class="text-center mt-3">
-                                <a href="{% url 'salary:admin_skills' %}" class="btn-gradient-info">
-                                    <i class="bi bi-arrow-right"></i> すべてのスキルを見る
-                                </a>
-                            </div>
-                        {% endif %}
                         <div class="text-center mt-4">
                             <a href="{% url 'salary:admin_skills' %}" class="btn-gradient-success">
                                 <i class="bi bi-arrow-right"></i> スキル管理へ
@@ -178,7 +171,7 @@
                     {% if grades_map %}
                         <div class="grades-map">
                             {% for grade in grades_map %}
-                                <a href="{% url 'salary:admin_grade_members' grade.id %}" class="grade-map-link">
+                                <a href="{% url 'salary:admin_grade_detail' grade.id %}" class="grade-map-link">
                                     <div class="grade-map-item">
                                         <div class="grade-header">
                                             <div class="grade-info">

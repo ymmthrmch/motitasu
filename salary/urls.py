@@ -21,7 +21,6 @@ urlpatterns = [
         path('skills/create/', admin_views.AdminSkillCreateView.as_view(), name='admin_skill_create'),
         path('skills/<int:pk>/', admin_views.AdminSkillDetailView.as_view(), name='admin_skill_detail'),
         path('skills/<int:pk>/edit/', admin_views.AdminSkillEditView.as_view(), name='admin_skill_edit'),
-        path('skills/<int:pk>/holders/', admin_views.AdminSkillHoldersView.as_view(), name='admin_skill_holders'),
         path('skills/<int:pk>/delete/', admin_views.AdminSkillDeleteAPI.as_view(), name='admin_skill_delete'),
         path('skills/api/holder-revoke/', admin_views.AdminRevokeSkillAPI.as_view(), name='admin_revoke_skill'),
         
@@ -30,7 +29,6 @@ urlpatterns = [
         path('grades/create/', admin_views.AdminGradeCreateView.as_view(), name='admin_grade_create'),
         path('grades/<int:pk>/', admin_views.AdminGradeDetailView.as_view(), name='admin_grade_detail'),
         path('grades/<int:pk>/edit/', admin_views.AdminGradeEditView.as_view(), name='admin_grade_edit'),
-        path('grades/<int:pk>/members/', admin_views.AdminGradeMembersView.as_view(), name='admin_grade_members'),
         path('grades/<int:pk>/delete/', admin_views.AdminGradeDeleteAPI.as_view(), name='admin_grade_delete'),
         
         # ユーザー管理

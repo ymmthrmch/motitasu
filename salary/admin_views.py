@@ -158,20 +158,6 @@ class AdminSkillEditView(AdminRequiredMixin, UpdateView):
         messages.success(self.request, f'スキル「{self.object.name}」を更新しました。')
         return response
 
-
-class AdminSkillHoldersView(AdminRequiredMixin, DetailView):
-    model = Skill
-    template_name = 'salary/admin/skills/holders.html'
-    context_object_name = 'skill'
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['holders'] = self.object.userskill_set.select_related(
-            'user', 'approved_by'
-        ).order_by('-acquired_date')
-        return context
-
-
 class AdminSkillDeleteAPI(AdminRequiredMixin, View):
     @admin_required_api
     def post(self, request, pk):
@@ -464,20 +450,6 @@ class AdminGradeEditView(AdminRequiredMixin, UpdateView):
         response = super().form_valid(form)
         messages.success(self.request, f'グレード「{self.object.name}」を更新しました。')
         return response
-
-
-class AdminGradeMembersView(AdminRequiredMixin, DetailView):
-    model = SalaryGrade
-    template_name = 'salary/admin/grades/members.html'
-    context_object_name = 'grade'
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['members'] = self.object.usersalarygrade_set.select_related(
-            'user', 'changed_by'
-        ).order_by('-effective_date')
-        return context
-
 
 class AdminGradeDeleteAPI(AdminRequiredMixin, View):
     @admin_required_api
