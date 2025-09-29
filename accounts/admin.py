@@ -13,7 +13,7 @@ class MonthlyTargetInline(admin.TabularInline):
 
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
-    list_display = ('email', 'name', 'hourly_wage', 'is_staff', 'is_active', 'created_at')
+    list_display = ('email', 'name', 'hourly_wage', 'is_staff', 'is_active', 'created_at', 'last_login')
     list_filter = ('is_staff', 'is_active', 'created_at')
     search_fields = ('email', 'name')
     ordering = ('-created_at',)
