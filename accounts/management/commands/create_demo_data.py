@@ -74,7 +74,6 @@ class Command(BaseCommand):
                 'email': 'tencho@example.com',
                 'name': 'もちた店長',
                 'is_staff': True,
-                'hourly_wage': 0,
                 'hire_date': date(2023, 4, 1),
                 'weekly_work_days': 6,
             },
@@ -82,7 +81,6 @@ class Command(BaseCommand):
                 'email': 'worker01@example.com',
                 'name': '小平邦彦',
                 'is_staff': False,
-                'hourly_wage': 1250,
                 'hire_date': date(2023, 10, 1),
                 'weekly_work_days': 5,
             },
@@ -90,7 +88,6 @@ class Command(BaseCommand):
                 'email': 'worker02@example.com',
                 'name': '広中平祐',
                 'is_staff': False,
-                'hourly_wage': 1200,
                 'hire_date': date(2024, 4, 1),
                 'weekly_work_days': 4,
             },
@@ -98,7 +95,6 @@ class Command(BaseCommand):
                 'email': 'worker03@example.com',
                 'name': '森重文',
                 'is_staff': False,
-                'hourly_wage': 1150,
                 'hire_date': date(2024, 10, 1),
                 'weekly_work_days': 3,
             },
@@ -106,7 +102,6 @@ class Command(BaseCommand):
                 'email': 'worker04@example.com',
                 'name': '山下真由子',
                 'is_staff': False,
-                'hourly_wage': 1100,
                 'hire_date': date(2025, 4, 1),
                 'weekly_work_days': 2,
             },
@@ -114,7 +109,6 @@ class Command(BaseCommand):
                 'email': 'demo01@example.com',
                 'name': 'デモ太郎',
                 'is_staff': False,
-                'hourly_wage': 1200,
                 'hire_date': date(2024, 4, 1),
                 'weekly_work_days': 4,
             },
@@ -128,7 +122,6 @@ class Command(BaseCommand):
                 password='motitasu'
             )
             user.is_staff = user_data['is_staff']
-            user.hourly_wage = user_data['hourly_wage']
             user.hire_date = user_data['hire_date']
             user.weekly_work_days = user_data['weekly_work_days']
             user.save()
