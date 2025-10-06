@@ -92,11 +92,7 @@ function addLongPressListener(element, callback, duration = 500) {
     element.addEventListener('mouseleave', cancel);
     
     // タッチイベント（モバイル対応）
-    element.addEventListener('touchstart', (e) => {
-        // タッチイベントの場合、マウスイベントも発火するのを防ぐ
-        e.preventDefault();
-        start(e);
-    });
+    element.addEventListener('touchstart', start);
     element.addEventListener('touchend', cancel);
     element.addEventListener('touchcancel', cancel);
     
