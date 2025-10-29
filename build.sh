@@ -13,4 +13,11 @@ python manage.py migrate
 
 # Create superuser if needed
 python manage.py superuser
-python manage.py create_demo_data
+
+# Create demo data if CREATE_DEMO_DATA is set to true
+if [ "$CREATE_DEMO_DATA" = "true" ]; then
+    echo "Creating demo data..."
+    python manage.py create_demo_data --force
+else
+    echo "Skipping demo data creation (set CREATE_DEMO_DATA=true to enable)"
+fi
