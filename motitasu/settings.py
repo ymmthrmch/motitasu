@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'core',  # プロジェクト全体で使用する汎用機能
     'accounts',
     'timeclock',
     'bulletin_board',

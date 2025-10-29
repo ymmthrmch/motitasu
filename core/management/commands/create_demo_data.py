@@ -2,6 +2,7 @@ from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.db import transaction
+from django.conf import settings
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 import logging
@@ -78,11 +79,19 @@ class Command(BaseCommand):
         # 1. ユーザー作成
         users = self.create_users()
 
+        # 有給休暇シグナルを一時的に無効化（重複付与を防ぐ）
+        settings.PAID_LEAVE_SIGNALS_ENABLED = False
+        self.stdout.write("有給休暇シグナルを無効化しました")
+
         # 2. タイムレコード作成
         self.create_time_records(users)
 
         # 3. 有給休暇記録作成
         self.create_paid_leave_records(users)
+
+        # 有給休暇シグナルを再度有効化
+        settings.PAID_LEAVE_SIGNALS_ENABLED = True
+        self.stdout.write("有給休暇シグナルを再度有効化しました")
 
         # 4. 月別目標作成
         self.create_monthly_targets(users)
@@ -314,18 +323,21 @@ class Command(BaseCommand):
 
         from timeclock.services.paid_leave_auto_processor import PaidLeaveAutoProcessor
 
-        # 全ユーザーの有給付与処理を実行
-        for user in users.values():
-            if user.hire_date:
-                processor = PaidLeaveAutoProcessor()
-                # 入社日から今日までの期間で付与処理を実行
-                current_date = user.hire_date
-                today = date.today()
+        # 全ユーザーの最も古い入社日を取得
+        earliest_hire_date = min(
+            (user.hire_date for user in users.values() if user.hire_date),
+            default=None
+        )
 
-                while current_date <= today:
-                    # 日次付与処理を実行（該当日に付与されるユーザーのみ処理される）
-                    processor.process_daily_grants_and_expirations(current_date)
-                    current_date += timedelta(days=1)
+        if earliest_hire_date:
+            processor = PaidLeaveAutoProcessor()
+            current_date = earliest_hire_date
+            today = date.today()
+
+            while current_date <= today:
+                # 日次付与処理を実行（全ユーザーを一度に処理）
+                processor.process_daily_grants_and_expirations(current_date)
+                current_date += timedelta(days=1)
 
         self.stdout.write(self.style.SUCCESS("✓ 有給休暇記録の作成が完了しました"))
 
