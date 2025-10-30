@@ -75,6 +75,18 @@ document.addEventListener('DOMContentLoaded', function () {
     
     // 進捗バーのアニメーションを開始
     animateProgressBar();
+
+    const statsValues = document.querySelectorAll('.summary-value');
+    statsValues.forEach(element => {
+        const text = element.textContent;
+        const match = text.match(/^(\d+)/);
+        if (match) {
+            const value = parseInt(match[1]);
+            const suffix = text.replace(/^\d+/, '');
+            element.dataset.suffix = suffix;
+            animateValue(element, 0, value, 1000);
+        }
+    });
     
     const clockButtons = document.querySelectorAll('.clock-btn');
     clockButtons.forEach(button => {
