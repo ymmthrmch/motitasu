@@ -121,7 +121,7 @@ class Command(BaseCommand):
                 "email": "worker01@example.com",
                 "name": "一の瀬花枝",
                 "is_staff": False,
-                "hire_date": date(2023, 4, 1),
+                "hire_date": date(2025, 4, 1),
                 "weekly_work_days": 5,
             },
             {
